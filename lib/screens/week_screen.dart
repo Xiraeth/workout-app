@@ -164,7 +164,7 @@ class _EmptyDay extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       child: Row(
         children: [
-          const IconTile(icon: LucideIcons.coffee, hue: Hue.amber),
+          IconTile(icon: LucideIcons.coffee, hue: Hue.amber),
           const SizedBox(width: 14),
           Expanded(
             child: Column(

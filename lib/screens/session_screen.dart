@@ -61,8 +61,34 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     if (picked != null) _update((x) => x.copyWith(date: picked));
   }
 
-  Future<void> _editExercise(Exercise? existing) async {
-    final result = await showExerciseSheet(context, existing: existing, unit: ref.read(settingsProvider).unit);
+  /// Copies this session (body parts, exercises, sets) to a day the user picks,
+  /// then opens the copy in place of this screen.
+  Future<void> _copy(Session s) async {
+    final today = dateOnly(ref.read(clockProvider)());
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: sameDay(s.date, today) ? addDays(today, 1) : today,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      helpText: 'Copy to',
+      confirmText: 'Copy',
+    );
+    if (picked == null || !mounted || _leaving) return;
+    final copy = s.copyTo(picked);
+    _sessions.add(copy);
+    ref.read(selectedDateProvider.notifier).select(copy.date);
+    _leaving = true;
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).pushReplacement(MaterialPageRoute<void>(builder: (_) => SessionScreen(sessionId: copy.id)));
+    messenger.showSnackBar(SnackBar(content: Text('Copied to ${sessionTitle(copy.date)}')));
+  }
+
+  void _openSource(Session source) {
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SessionScreen(sessionId: source.id)));
+  }
+
+  Future<void> _editExercise(Exercise? existing, {Exercise? previous}) async {
+    final result = await showExerciseSheet(context, existing: existing, previous: previous, unit: ref.read(settingsProvider).unit);
     if (result == null) return;
     if (result is ExerciseSaved) ref.read(exerciseLibraryProvider.notifier).remember(result.exercise);
     _update(
@@ -89,6 +115,16 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     final s = _last;
     final unit = ref.watch(settingsProvider).unit;
     final today = dateOnly(ref.watch(clockProvider)());
+    // The session this one was copied from, if it still exists.
+    final sourceId = s?.copiedFromId;
+    final source = sourceId == null
+        ? null
+        : ref.watch(sessionsProvider.select((list) {
+            for (final x in list) {
+              if (x.id == sourceId) return x;
+            }
+            return null;
+          }));
 
     return PopScope(
       canPop: false,
@@ -113,11 +149,11 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
                             ListView(
                               padding: const EdgeInsets.fromLTRB(Space.side, 8, Space.side, 120),
                               children: [
-                                _header(s, today),
+                                _header(s, today, source),
                                 const SizedBox(height: 20),
                                 _details(s),
                                 const SizedBox(height: 28),
-                                ..._exercises(s, unit),
+                                ..._exercises(s, unit, source),
                               ],
                             ),
                             Positioned(
@@ -164,6 +200,15 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
         ),
         const Spacer(),
         AppIconButton(
+          icon: LucideIcons.copy,
+          tooltip: 'Copy to another day',
+          tint: AppColors.accentTint,
+          iconColor: AppColors.accent,
+          // An empty session (no body parts, no exercises) has nothing to copy.
+          onPressed: s.isEmpty ? null : () => _copy(s),
+        ),
+        const SizedBox(width: 8),
+        AppIconButton(
           icon: LucideIcons.trash2,
           tooltip: 'Delete session',
           tint: AppColors.missedTint,
@@ -174,7 +219,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     );
   }
 
-  Widget _header(Session s, DateTime today) {
+  Widget _header(Session s, DateTime today, Session? source) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -187,6 +232,10 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
               Text(sessionTitle(s.date), style: AppText.h2),
               const SizedBox(height: 4),
               Text(sessionMeta(s), style: AppText.small),
+              if (source != null) ...[
+                const SizedBox(height: 10),
+                _SourceLink(source: source, onTap: () => _openSource(source)),
+              ],
             ],
           ),
         ),
@@ -219,11 +268,17 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     );
   }
 
-  List<Widget> _exercises(Session s, WeightUnit unit) => [
+  List<Widget> _exercises(Session s, WeightUnit unit, Session? source) => [
     SectionTitle('Exercises', trailing: '${s.exercises.length} logged'),
     for (final (i, e) in s.exercises.indexed) ...[
       if (i > 0) const SizedBox(height: 10),
-      _ExerciseCard(index: i, exercise: e, unit: unit, onTap: () => _editExercise(e)),
+      _ExerciseCard(
+        index: i,
+        exercise: e,
+        previous: previousExercise(source, e),
+        unit: unit,
+        onTap: () => _editExercise(e, previous: previousExercise(source, e)),
+      ),
     ],
     if (s.exercises.isEmpty)
       AppCard(
@@ -265,7 +320,7 @@ class _DateField extends StatelessWidget {
           height: 50,
           child: Row(
             children: [
-              const Icon(LucideIcons.calendarDays, size: 18, color: AppColors.accent),
+              Icon(LucideIcons.calendarDays, size: 18, color: AppColors.accent),
               const SizedBox(width: 10),
               Expanded(child: Text(dateField(date), style: AppText.input)),
               Text('Change', style: AppText.label.copyWith(color: AppColors.accent)),
@@ -277,11 +332,48 @@ class _DateField extends StatelessWidget {
   }
 }
 
+/// "Copied from Wednesday 11 Nov", opening the original session.
+class _SourceLink extends StatelessWidget {
+  const _SourceLink({required this.source, required this.onTap});
+
+  final Session source;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = BorderRadius.circular(Radii.pill);
+    return Pressable(
+      onTap: onTap,
+      scale: 0.96,
+      borderRadius: r,
+      decoration: BoxDecoration(color: AppColors.accentTint, borderRadius: r),
+      padding: const EdgeInsets.fromLTRB(10, 6, 8, 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(LucideIcons.history, size: 14, color: AppColors.accentDark),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              'Copied from ${sessionTitle(source.date)}',
+              overflow: TextOverflow.ellipsis,
+              style: AppText.badge.copyWith(color: AppColors.accentDark),
+            ),
+          ),
+          const SizedBox(width: 2),
+          Icon(LucideIcons.chevronRight, size: 14, color: AppColors.accentDark),
+        ],
+      ),
+    );
+  }
+}
+
 class _ExerciseCard extends StatelessWidget {
-  const _ExerciseCard({required this.index, required this.exercise, required this.unit, required this.onTap});
+  const _ExerciseCard({required this.index, required this.exercise, required this.previous, required this.unit, required this.onTap});
 
   final int index;
   final Exercise exercise;
+  final Exercise? previous; // the same exercise in the session this one was copied from
   final WeightUnit unit;
   final VoidCallback onTap;
 
@@ -305,6 +397,10 @@ class _ExerciseCard extends StatelessWidget {
                   setSummary(exercise, unit),
                   style: AppText.body.copyWith(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.accentDark),
                 ),
+                if (previous != null) ...[
+                  const SizedBox(height: 3),
+                  LastTime(previous: previous!, unit: unit),
+                ],
                 const SizedBox(height: 4),
                 Text(
                   typeLine(exercise).toUpperCase(),
@@ -314,8 +410,8 @@ class _ExerciseCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          const Padding(
-            padding: EdgeInsets.only(top: 4),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
             child: Icon(LucideIcons.chevronRight, size: 18, color: AppColors.faint),
           ),
         ],

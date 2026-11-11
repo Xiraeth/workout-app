@@ -3,11 +3,13 @@ import 'package:flutter/services.dart';
 
 import 'tokens.dart';
 
-/// Light, rounded theme. Most components are custom widgets; this covers the
-/// Material pieces still in use (text fields, date picker, sheets, dialogs).
+/// Rounded theme for the current [Palette] (light or dark). Most components
+/// are custom widgets; this covers the Material pieces still in use (text
+/// fields, date picker, sheets, dialogs, snackbars).
 ThemeData buildAppTheme() {
   RoundedRectangleBorder rounded(double r) => RoundedRectangleBorder(borderRadius: BorderRadius.circular(r));
-  final scheme = ColorScheme.light(
+  final dark = Palette.current.isDark;
+  final scheme = (dark ? ColorScheme.dark : ColorScheme.light)(
     primary: AppColors.accent,
     onPrimary: Colors.white,
     secondary: AppColors.accent,
@@ -23,7 +25,7 @@ ThemeData buildAppTheme() {
   final fieldBorder = WidgetStateInputBorder.resolveWith((states) => OutlineInputBorder(
         borderRadius: BorderRadius.circular(Radii.field),
         borderSide: states.contains(WidgetState.focused)
-            ? const BorderSide(color: AppColors.accent, width: 2)
+            ? BorderSide(color: AppColors.accent, width: 2)
             : BorderSide.none,
       ));
 
@@ -74,32 +76,35 @@ ThemeData buildAppTheme() {
       shape: rounded(24),
       headerBackgroundColor: AppColors.accent,
       headerForegroundColor: Colors.white,
-      todayBorder: const BorderSide(color: AppColors.accent),
+      todayBorder: BorderSide(color: AppColors.accent),
       dividerColor: AppColors.line,
       cancelButtonStyle: TextButton.styleFrom(foregroundColor: AppColors.muted, textStyle: AppText.button),
       confirmButtonStyle: TextButton.styleFrom(foregroundColor: AppColors.accent, textStyle: AppText.button),
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      backgroundColor: AppColors.ink,
-      contentTextStyle: AppText.body.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+      backgroundColor: dark ? AppColors.field : AppColors.ink,
+      contentTextStyle: AppText.body.copyWith(color: dark ? AppColors.ink : Colors.white, fontWeight: FontWeight.w600),
       shape: rounded(16),
       elevation: 0,
-      insetPadding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
+      insetPadding: const EdgeInsets.fromLTRB(20, 0, 20, 150), // above the floating bottom button
     ),
-    appBarTheme: const AppBarTheme(systemOverlayStyle: overlayStyle),
+    appBarTheme: AppBarTheme(systemOverlayStyle: overlayStyle),
   );
 }
 
-const overlayStyle = SystemUiOverlayStyle(
-  statusBarColor: Colors.transparent,
-  statusBarIconBrightness: Brightness.dark,
-  statusBarBrightness: Brightness.light,
-  // Draw behind the navigation bar (edge to edge) without Android's contrast scrim;
-  // screens pad their bottom bars by the system inset.
-  systemNavigationBarColor: Colors.transparent,
-  systemNavigationBarDividerColor: Colors.transparent,
-  systemNavigationBarIconBrightness: Brightness.dark,
-  systemNavigationBarContrastEnforced: false,
-  systemStatusBarContrastEnforced: false,
-);
+/// Status and navigation bar style for the current palette: transparent bars
+/// (edge to edge, no contrast scrim), icons dark on light and light on dark.
+SystemUiOverlayStyle get overlayStyle {
+  final dark = Palette.current.isDark;
+  return SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+    statusBarBrightness: dark ? Brightness.dark : Brightness.light,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarDividerColor: Colors.transparent,
+    systemNavigationBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+    systemNavigationBarContrastEnforced: false,
+    systemStatusBarContrastEnforced: false,
+  );
+}

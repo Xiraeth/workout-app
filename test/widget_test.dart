@@ -5,9 +5,12 @@ import 'package:workoutlog/data/session_repository.dart';
 import 'package:workoutlog/data/settings_repository.dart';
 import 'package:workoutlog/main.dart';
 import 'package:workoutlog/models/enums.dart';
+import 'package:workoutlog/models/exercise.dart';
 import 'package:workoutlog/models/session.dart';
+import 'package:workoutlog/models/set_entry.dart';
 import 'package:workoutlog/screens/week_screen.dart';
 import 'package:workoutlog/state/providers.dart';
+import 'package:workoutlog/theme/tokens.dart';
 import 'package:workoutlog/widgets/app_buttons.dart';
 import 'package:workoutlog/widgets/settings_sheet.dart';
 import 'package:workoutlog/utils/dates.dart';
@@ -15,6 +18,7 @@ import 'package:workoutlog/utils/dates.dart';
 final today = DateTime(2026, 11, 11); // a Wednesday
 
 Future<ProviderContainer> pumpApp(WidgetTester tester, {List<Session> sessions = const []}) async {
+  addTearDown(() => Palette.current = Palette.light); // the palette is global
   tester.view.physicalSize = const Size(390 * 3, 844 * 3);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
@@ -264,5 +268,75 @@ void main() {
     expect(find.text('2 sessions · 10 exercises on this phone'), findsOneWidget);
     expect(find.text('Export'), findsOneWidget);
     expect(find.text('Import'), findsOneWidget);
+  });
+
+  testWidgets('appearance: dark and back to light, rebuilding open screens', (tester) async {
+    final c = await pumpApp(tester, sessions: [Session(date: today, parts: [BodyPart.core])]);
+    Color pageColor() => tester.widget<Material>(find.descendant(of: find.byType(Scaffold).first, matching: find.byType(Material)).first).color!;
+    Color textColor(String text) => tester.widget<Text>(find.text(text)).style!.color!;
+    expect(pageColor(), Palette.light.bg);
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tapText(tester, 'Dark');
+    expect(c.read(settingsProvider).appearance, Appearance.dark);
+    expect(Palette.current.isDark, isTrue);
+    // The screen behind the open sheet was rebuilt with the dark colours.
+    expect(pageColor(), Palette.dark.bg);
+    expect(textColor('Wednesday 11 November'), Palette.dark.ink);
+
+    await tapText(tester, 'Light');
+    expect(Palette.current.isDark, isFalse);
+    expect(textColor('Wednesday 11 November'), Palette.light.ink);
+  });
+
+  testWidgets('appearance: system follows the phone', (tester) async {
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    await pumpApp(tester);
+    expect(Palette.current.isDark, isTrue);
+
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+    await tester.pumpAndSettle();
+    expect(Palette.current.isDark, isFalse);
+    expect(tester.widget<Text>(find.text('Wednesday 11 November')).style!.color, Palette.light.ink);
+  });
+
+  testWidgets('copy a session to another day and compare with the original', (tester) async {
+    final c = await pumpApp(tester, sessions: [
+      Session(date: today, parts: [BodyPart.chest], done: true, exercises: [
+        Exercise(name: 'Bench press', equipment: Equipment.freeWeights, sets: [SetEntry(value: 8, weight: 60), SetEntry(value: 8, weight: 60)]),
+      ]),
+    ]);
+    await tapText(tester, 'Chest');
+    await tester.tap(find.byTooltip('Copy to another day'));
+    await tester.pumpAndSettle();
+    expect(find.text('Copy to'), findsOneWidget);
+    await tester.tap(find.text('16'));
+    await tester.tap(find.text('Copy'));
+    await tester.pumpAndSettle();
+
+    final sessions = c.read(sessionsProvider);
+    expect(sessions, hasLength(2));
+    final copy = sessions.last;
+    expect(copy.date, DateTime(2026, 11, 16));
+    expect(copy.done, isFalse);
+    expect(copy.exercises.single.sets.map((s) => (s.value, s.weight)), [(8, 60.0), (8, 60.0)]);
+
+    // The copy is open, linked to the original, with "Last time" per exercise.
+    expect(find.text('Monday 16 Nov'), findsOneWidget);
+    expect(find.text('Copied from Wednesday 11 Nov'), findsOneWidget);
+    expect(find.text('Last time  '), findsOneWidget);
+
+    // Back goes to the week of the copy.
+    await tapText(tester, 'Week');
+    expect(c.read(selectedDateProvider), DateTime(2026, 11, 16));
+  });
+
+  testWidgets('an empty session cannot be copied', (tester) async {
+    await pumpApp(tester);
+    await tapText(tester, 'New session · Wed 11');
+    final copyButton = tester.widget<AppIconButton>(find.ancestor(of: find.byTooltip('Copy to another day'), matching: find.byType(AppIconButton)));
+    expect(copyButton.onPressed, isNull);
   });
 }

@@ -68,7 +68,7 @@ class UpcomingList extends StatelessWidget {
       child: Column(
         children: [
           for (final (i, s) in sessions.indexed) ...[
-            if (i > 0) const Divider(height: 1, thickness: 1, indent: 76, color: AppColors.line),
+            if (i > 0) Divider(height: 1, thickness: 1, indent: 76, color: AppColors.line),
             _UpcomingRow(session: s, onTap: () => onOpen(s)),
           ],
         ],
@@ -117,7 +117,7 @@ class _UpcomingRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          const Icon(LucideIcons.chevronRight, size: 18, color: AppColors.faint),
+          Icon(LucideIcons.chevronRight, size: 18, color: AppColors.faint),
         ],
       ),
     );

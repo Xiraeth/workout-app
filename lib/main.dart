@@ -11,9 +11,11 @@ import 'data/json_file_store.dart';
 import 'data/seed.dart';
 import 'data/session_repository.dart';
 import 'data/settings_repository.dart';
+import 'models/enums.dart';
 import 'screens/week_screen.dart';
 import 'state/providers.dart';
 import 'theme/app_theme.dart';
+import 'theme/tokens.dart';
 import 'utils/dates.dart';
 
 Future<void> main() async {
@@ -55,11 +57,56 @@ Future<void> main() async {
   ));
 }
 
-class WorkoutLogApp extends StatelessWidget {
+class WorkoutLogApp extends ConsumerStatefulWidget {
   const WorkoutLogApp({super.key});
 
   @override
+  ConsumerState<WorkoutLogApp> createState() => _WorkoutLogAppState();
+}
+
+/// Picks the light or dark [Palette] from the appearance setting and the
+/// phone's theme. Colours are read from [Palette.current] while building, so on
+/// a change every widget is rebuilt in place (open screens and sheets stay open).
+class _WorkoutLogAppState extends ConsumerState<WorkoutLogApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _applyPalette(rebuild: false); // nothing is built yet
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangePlatformBrightness() => _applyPalette();
+
+  void _applyPalette({bool rebuild = true}) {
+    final appearance = ref.read(settingsProvider).appearance;
+    final dark = switch (appearance) {
+      Appearance.dark => true,
+      Appearance.light => false,
+      Appearance.system => WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark,
+    };
+    if (Palette.current.isDark == dark) return;
+    Palette.current = dark ? Palette.dark : Palette.light;
+    SystemChrome.setSystemUIOverlayStyle(overlayStyle);
+    if (!rebuild || !mounted) return;
+    setState(() {});
+    void markDirty(Element e) {
+      e.markNeedsBuild();
+      e.visitChildren(markDirty);
+    }
+
+    (context as Element).visitChildren(markDirty);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    ref.listen(settingsProvider.select((s) => s.appearance), (_, _) => _applyPalette());
     return MaterialApp(
       title: 'Workout Log',
       debugShowCheckedModeBanner: false,

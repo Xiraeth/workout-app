@@ -3,23 +3,25 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../models/enums.dart';
+import '../models/exercise.dart';
 import '../theme/tokens.dart';
+import '../utils/format.dart';
 import 'app_buttons.dart';
 
 /// White rounded card with a soft shadow; tappable when [onTap] is set.
 class AppCard extends StatelessWidget {
-  const AppCard({super.key, required this.child, this.onTap, this.padding = const EdgeInsets.all(16), this.color = AppColors.surface, this.radius = Radii.card});
+  const AppCard({super.key, required this.child, this.onTap, this.padding = const EdgeInsets.all(16), this.color, this.radius = Radii.card});
 
   final Widget child;
   final VoidCallback? onTap;
   final EdgeInsetsGeometry padding;
-  final Color color;
+  final Color? color; // defaults to the surface colour, with a shadow
   final double radius;
 
   @override
   Widget build(BuildContext context) {
     final r = BorderRadius.circular(radius);
-    final deco = BoxDecoration(color: color, borderRadius: r, boxShadow: color == AppColors.surface ? Shadows.card : null);
+    final deco = BoxDecoration(color: color ?? AppColors.surface, borderRadius: r, boxShadow: color == null ? Shadows.card : null);
     if (onTap == null) return Container(decoration: deco, padding: padding, child: child);
     return Pressable(onTap: onTap, decoration: deco, borderRadius: r, padding: padding, scale: 0.98, child: child);
   }
@@ -51,13 +53,14 @@ class StatusTag extends StatelessWidget {
 
 /// A small tinted pill, e.g. "TODAY".
 class TintPill extends StatelessWidget {
-  const TintPill(this.text, {super.key, this.hue = Hue.indigo});
+  const TintPill(this.text, {super.key, this.hue});
 
   final String text;
-  final Hue hue;
+  final Hue? hue; // indigo by default
 
   @override
   Widget build(BuildContext context) {
+    final hue = this.hue ?? Hue.indigo;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: hue.tint, borderRadius: BorderRadius.circular(Radii.pill)),
@@ -236,7 +239,7 @@ class AppChip extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.onLongPress,
-    this.hue = Hue.indigo,
+    this.hue,
     this.compact = false,
   });
 
@@ -244,12 +247,13 @@ class AppChip extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
-  final Hue hue;
+  final Hue? hue; // indigo by default
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final r = BorderRadius.circular(Radii.pill);
+    final hue = this.hue ?? Hue.indigo;
     return Semantics(
       selected: selected,
       button: true,
@@ -294,15 +298,16 @@ class AppChip extends StatelessWidget {
 
 /// Filled circle with a number, e.g. exercise and set indexes.
 class NumberBadge extends StatelessWidget {
-  const NumberBadge(this.number, {super.key, this.size = 30, this.hue = Hue.indigo, this.filled = true});
+  const NumberBadge(this.number, {super.key, this.size = 30, this.hue, this.filled = true});
 
   final int number;
   final double size;
-  final Hue hue;
+  final Hue? hue; // indigo by default
   final bool filled;
 
   @override
   Widget build(BuildContext context) {
+    final hue = this.hue ?? Hue.indigo;
     return Container(
       width: size,
       height: size,
@@ -383,6 +388,26 @@ class SheetHandle extends StatelessWidget {
         height: 5,
         decoration: BoxDecoration(color: AppColors.line, borderRadius: BorderRadius.circular(Radii.pill)),
       ),
+    );
+  }
+}
+
+/// "Last time  3 × 8 · 60 kg": an exercise's sets in the session it was copied from.
+class LastTime extends StatelessWidget {
+  const LastTime({super.key, required this.previous, required this.unit});
+
+  final Exercise previous;
+  final WeightUnit unit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(LucideIcons.history, size: 13, color: AppColors.muted),
+        const SizedBox(width: 5),
+        Text('Last time  ', style: AppText.tiny.copyWith(fontWeight: FontWeight.w700)),
+        Expanded(child: Text(setSummary(previous, unit), overflow: TextOverflow.ellipsis, style: AppText.tiny)),
+      ],
     );
   }
 }

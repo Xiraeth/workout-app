@@ -60,3 +60,13 @@ enum WeekStart {
   const WeekStart(this.label);
   final String label;
 }
+
+/// Light or dark look; [system] follows the phone.
+enum Appearance {
+  system('System'),
+  light('Light'),
+  dark('Dark');
+
+  const Appearance(this.label);
+  final String label;
+}

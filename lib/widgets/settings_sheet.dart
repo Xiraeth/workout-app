@@ -108,6 +108,14 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      const FieldLabel('Appearance'),
+                      SegControl<Appearance>(
+                        options: Appearance.values,
+                        value: settings.appearance,
+                        labelOf: (a) => a.label,
+                        onChanged: notifier.setAppearance,
+                      ),
+                      const SizedBox(height: 16),
                       const FieldLabel('Units'),
                       SegControl<WeightUnit>(
                         options: WeightUnit.values,
@@ -135,7 +143,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                     children: [
                       Row(
                         children: [
-                          const IconTile(icon: LucideIcons.databaseBackup, hue: Hue.sky, size: 40),
+                          IconTile(icon: LucideIcons.databaseBackup, hue: Hue.sky, size: 40),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(

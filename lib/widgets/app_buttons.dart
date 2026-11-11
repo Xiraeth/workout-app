@@ -182,7 +182,7 @@ class AppIconButton extends StatelessWidget {
     this.size = 40,
     this.iconSize = 18,
     this.tint,
-    this.iconColor = AppColors.ink,
+    this.iconColor,
     this.flat = false,
   });
 
@@ -192,7 +192,7 @@ class AppIconButton extends StatelessWidget {
   final double size;
   final double iconSize;
   final Color? tint;
-  final Color iconColor;
+  final Color? iconColor; // ink by default
   final bool flat; // no background or shadow
 
   @override
@@ -212,7 +212,7 @@ class AppIconButton extends StatelessWidget {
           decoration: flat
               ? null
               : BoxDecoration(color: tint ?? AppColors.surface, borderRadius: r, boxShadow: tint == null ? Shadows.small : null),
-          child: SizedBox(width: size, height: size, child: Icon(icon, size: iconSize, color: iconColor)),
+          child: SizedBox(width: size, height: size, child: Icon(icon, size: iconSize, color: iconColor ?? AppColors.ink)),
         ),
       ),
     );

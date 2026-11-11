@@ -12,7 +12,7 @@ void main() {
     final b = Backup(
       sessions: seedSessions(today),
       exercises: defaultTemplates(),
-      settings: const AppSettings(unit: WeightUnit.lb, weekStart: WeekStart.sunday),
+      settings: const AppSettings(unit: WeightUnit.lb, weekStart: WeekStart.sunday, appearance: Appearance.dark),
     );
     final back = Backup.parse(b.toJsonString(today));
     expect(back.sessions.map((s) => s.id), b.sessions.map((s) => s.id));
@@ -20,6 +20,7 @@ void main() {
     expect(back.exercises.map((t) => t.name), b.exercises.map((t) => t.name));
     expect(back.settings.unit, WeightUnit.lb);
     expect(back.settings.weekStart, WeekStart.sunday);
+    expect(back.settings.appearance, Appearance.dark);
   });
 
   test('rejects files that are not backups', () {
@@ -44,6 +45,7 @@ void main() {
     expect(b.sessions, isEmpty);
     expect(b.exercises, isEmpty);
     expect(b.settings.unit, WeightUnit.kg);
+    expect(b.settings.appearance, Appearance.system);
   });
 
   test('file name', () {

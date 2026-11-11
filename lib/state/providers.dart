@@ -77,6 +77,7 @@ class SettingsNotifier extends Notifier<AppSettings> {
 
   void setUnit(WeightUnit u) => _set(state.copyWith(unit: u));
   void setWeekStart(WeekStart w) => _set(state.copyWith(weekStart: w));
+  void setAppearance(Appearance a) => _set(state.copyWith(appearance: a));
   void replace(AppSettings s) => _set(s);
 }
 

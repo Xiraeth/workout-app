@@ -28,10 +28,10 @@ class ExerciseRemoved extends ExerciseSheetResult {
 }
 
 /// Opens the create/edit sheet. Null means cancelled.
-Future<ExerciseSheetResult?> showExerciseSheet(BuildContext context, {Exercise? existing, required WeightUnit unit}) {
+Future<ExerciseSheetResult?> showExerciseSheet(BuildContext context, {Exercise? existing, Exercise? previous, required WeightUnit unit}) {
   // Created once: while the keyboard animates, the builder below runs every
   // frame, and passing the same widget lets Flutter skip rebuilding the sheet.
-  final sheet = ExerciseSheet(existing: existing, unit: unit);
+  final sheet = ExerciseSheet(existing: existing, previous: previous, unit: unit);
   return showModalBottomSheet<ExerciseSheetResult>(
     context: context,
     isScrollControlled: true,
@@ -46,9 +46,12 @@ Future<ExerciseSheetResult?> showExerciseSheet(BuildContext context, {Exercise? 
 }
 
 class ExerciseSheet extends ConsumerStatefulWidget {
-  const ExerciseSheet({super.key, this.existing, required this.unit});
+  const ExerciseSheet({super.key, this.existing, this.previous, required this.unit});
 
   final Exercise? existing;
+
+  /// The same exercise in the session this one was copied from, shown as "Last time".
+  final Exercise? previous;
   final WeightUnit unit;
 
   @override
@@ -177,7 +180,7 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
                         padding: EdgeInsets.only(top: matches.isEmpty ? 0 : 10),
                         child: Row(
                           children: [
-                            const Icon(LucideIcons.sparkles, size: 15, color: AppColors.accent),
+                            Icon(LucideIcons.sparkles, size: 15, color: AppColors.accent),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text('New exercise. Saving adds it to your exercises.',
@@ -231,6 +234,11 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (widget.previous != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(2, 0, 4, 12),
+                        child: LastTime(previous: widget.previous!, unit: widget.unit),
+                      ),
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: _SetGrid(

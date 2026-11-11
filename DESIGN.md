@@ -2,6 +2,8 @@
 
 A light, rounded, colourful look: soft white cards on a cool grey page, an indigo brand colour, and extra colours that carry meaning (status, categories). It replaced an earlier flat, square, black-and-indigo design that felt dated. The look takes cues from modern dashboards (AWS's rounded console, tinted summary tiles) rather than from any one product.
 
+There is a light and a dark palette (`Palette.light` / `Palette.dark`); Settings > Appearance picks System, Light or Dark. Widgets read colours from `Palette.current` while building, and the app root swaps the palette and rebuilds everything in place when the choice or the phone's theme changes. So never cache a colour, text style or shadow in a `const` or a static final: use the getters (`AppColors.x`, `Hue.x`, `AppText.x`, `Shadows.x`).
+
 Everything lives in `lib/theme/tokens.dart` (values) and `lib/widgets/common.dart` / `app_buttons.dart` (components). Change values there, not in screens.
 
 ## Principles
@@ -30,7 +32,9 @@ Everything lives in `lib/theme/tokens.dart` (values) and `lib/widgets/common.dar
 | accentTint | `#EEF0FF` | Tonal buttons, indigo tints |
 | scrim | ink @ 40% | Behind sheets and dialogs |
 
-Hues (`Hue` in `tokens.dart`, solid / text / tint):
+Dark palette: bg `#0D0F17`, surface `#171A26`, field `#222636`, line `#2B3045`, ink `#ECEEF6`, muted `#9AA0B8`, faint `#666C85`, accent `#6366F1` (gradient from `#818CF8`), accentDark `#A5B4FC` (light indigo text), accentTint `#1F2247`, scrim black @ 60%. Cards stand out by being lighter than the page; their shadow is darker and tighter (`0 6 18` black @ 35%), and glows are a little stronger.
+
+Hues (`Hue` in `tokens.dart`, solid / text / tint), light:
 
 | Hue | Solid | Text | Tint | Used for |
 |---|---|---|---|---|
@@ -42,6 +46,8 @@ Hues (`Hue` in `tokens.dart`, solid / text / tint):
 | pink | `#DB2777` | `#BE185D` | `#FDEEF5` | Core |
 | orange | `#EA580C` | `#C2410C` | `#FFF1E8` | Legs, "sets done" tile |
 | amber | `#D97706` | `#B45309` | `#FEF5E7` | Empty/rest state |
+
+In dark, hues get brighter solids, light text shades and dark low-saturation tints, e.g. green `#22C55E` / `#86EFAC` / `#12291D`, coral `#F97066` / `#FDA29B` / `#331A1A`, indigo `#6366F1` / `#A5B4FC` / `#1F2247` (all in `Palette.dark`).
 
 ## Type (Plus Jakarta Sans)
 
