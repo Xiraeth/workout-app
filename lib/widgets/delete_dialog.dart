@@ -23,21 +23,21 @@ Future<bool?> showConfirmDialog(BuildContext context, {required String title, re
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 440),
           child: Padding(
-            padding: const EdgeInsets.all(Space.s4),
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppText.cardTitle),
-                const SizedBox(height: 12),
-                Opacity(opacity: 0.85, child: Text(body, style: AppText.body.copyWith(fontSize: 14))),
-                const SizedBox(height: 20), // 12 gap + 8 margin
+                Text(title, style: AppText.h3),
+                const SizedBox(height: 8),
+                Text(body, style: AppText.body.copyWith(color: AppColors.muted)),
+                const SizedBox(height: 22),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    AppButton(label: 'Keep', onPressed: () => Navigator.of(context).pop(false)),
+                    AppButton(label: 'Keep', variant: BtnVariant.ghost, foreground: AppColors.ink, onPressed: () => Navigator.of(context).pop(false)),
                     const SizedBox(width: 8),
-                    AppButton(label: confirm, variant: BtnVariant.primary, onPressed: () => Navigator.of(context).pop(true)),
+                    AppButton(label: confirm, variant: BtnVariant.danger, onPressed: () => Navigator.of(context).pop(true)),
                   ],
                 ),
               ],

@@ -1,10 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../models/enums.dart';
 import '../theme/tokens.dart';
+import 'app_buttons.dart';
 
-/// Done / Planned / Missed tag.
+/// White rounded card with a soft shadow; tappable when [onTap] is set.
+class AppCard extends StatelessWidget {
+  const AppCard({super.key, required this.child, this.onTap, this.padding = const EdgeInsets.all(16), this.color = AppColors.surface, this.radius = Radii.card});
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final EdgeInsetsGeometry padding;
+  final Color color;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = BorderRadius.circular(radius);
+    final deco = BoxDecoration(color: color, borderRadius: r, boxShadow: color == AppColors.surface ? Shadows.card : null);
+    if (onTap == null) return Container(decoration: deco, padding: padding, child: child);
+    return Pressable(onTap: onTap, decoration: deco, borderRadius: r, padding: padding, scale: 0.98, child: child);
+  }
+}
+
+/// Done / Planned / Missed pill.
 class StatusTag extends StatelessWidget {
   const StatusTag(this.status, {super.key});
 
@@ -12,20 +33,40 @@ class StatusTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg, border) = switch (status) {
-      SessionStatus.done => (AppColors.accent100, AppColors.accent800, null),
-      SessionStatus.planned => (Colors.transparent, AppColors.accent, Border.all(color: AppColors.accent)),
-      SessionStatus.missed => (AppColors.neutral100, AppColors.neutral800, null),
-    };
+    final h = hueForStatus(status);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      decoration: BoxDecoration(color: bg, border: border),
-      child: Text(status.label, style: AppText.tag.copyWith(color: fg)),
+      padding: const EdgeInsets.fromLTRB(8, 4, 10, 4),
+      decoration: BoxDecoration(color: h.tint, borderRadius: BorderRadius.circular(Radii.pill)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(width: 6, height: 6, decoration: BoxDecoration(color: h.solid, shape: BoxShape.circle)),
+          const SizedBox(width: 6),
+          Text(status.label, style: AppText.badge.copyWith(color: h.text)),
+        ],
+      ),
     );
   }
 }
 
-/// Field label: 12px, ink @ 70%, 5px below.
+/// A small tinted pill, e.g. "TODAY".
+class TintPill extends StatelessWidget {
+  const TintPill(this.text, {super.key, this.hue = Hue.indigo});
+
+  final String text;
+  final Hue hue;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: hue.tint, borderRadius: BorderRadius.circular(Radii.pill)),
+      child: Text(text, style: AppText.badge.copyWith(color: hue.text, fontSize: 11, letterSpacing: 0.6)),
+    );
+  }
+}
+
+/// Field label with optional trailing hint.
 class FieldLabel extends StatelessWidget {
   const FieldLabel(this.text, {super.key, this.trailing});
 
@@ -35,20 +76,43 @@ class FieldLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 5),
+      padding: const EdgeInsets.only(left: 2, bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.baseline,
         textBaseline: TextBaseline.alphabetic,
         children: [
           Expanded(child: Text(text, style: AppText.label)),
-          if (trailing != null) Text(trailing!, style: AppText.muted12),
+          if (trailing != null) Text(trailing!, style: AppText.tiny.copyWith(color: AppColors.faint)),
         ],
       ),
     );
   }
 }
 
-/// 44px input: surface fill, 1px divider border, accent when focused.
+/// Section heading with an optional trailing note.
+class SectionTitle extends StatelessWidget {
+  const SectionTitle(this.text, {super.key, this.trailing});
+
+  final String text;
+  final String? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 2, bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Expanded(child: Text(text, style: AppText.h4)),
+          if (trailing != null) Text(trailing!, style: AppText.small),
+        ],
+      ),
+    );
+  }
+}
+
+/// Filled, rounded 48px input; indigo ring when focused.
 class AppTextField extends StatelessWidget {
   const AppTextField({
     super.key,
@@ -59,6 +123,8 @@ class AppTextField extends StatelessWidget {
     this.inputFormatters,
     this.textCapitalization = TextCapitalization.none,
     this.semanticLabel,
+    this.height = 48,
+    this.textAlign = TextAlign.start,
   });
 
   final TextEditingController controller;
@@ -68,29 +134,32 @@ class AppTextField extends StatelessWidget {
   final List<TextInputFormatter>? inputFormatters;
   final TextCapitalization textCapitalization;
   final String? semanticLabel;
+  final double height;
+  final TextAlign textAlign;
 
   @override
   Widget build(BuildContext context) {
     final field = SizedBox(
-      height: 44,
+      height: height,
       child: TextField(
         controller: controller,
         onChanged: onChanged,
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
         textCapitalization: textCapitalization,
+        textAlign: textAlign,
         style: AppText.input,
         expands: true,
         maxLines: null,
         textAlignVertical: TextAlignVertical.center,
-        decoration: InputDecoration(hintText: hint, contentPadding: const EdgeInsets.symmetric(horizontal: 10)),
+        decoration: InputDecoration(hintText: hint),
       ),
     );
     return semanticLabel == null ? field : Semantics(label: semanticLabel, child: field);
   }
 }
 
-/// Full-width segmented control with two or more equal segments.
+/// Pill segmented control: a grey track with a sliding indigo pill.
 class SegControl<T> extends StatelessWidget {
   const SegControl({super.key, required this.options, required this.value, required this.onChanged, required this.labelOf});
 
@@ -101,61 +170,65 @@ class SegControl<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final index = options.indexOf(value);
     return Container(
-      decoration: BoxDecoration(border: Border.all(color: AppColors.divider)),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+      height: 44,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(color: AppColors.field, borderRadius: BorderRadius.circular(Radii.pill)),
+      child: LayoutBuilder(builder: (context, c) {
+        final w = c.maxWidth / options.length;
+        return Stack(
           children: [
-            for (final (i, o) in options.indexed) ...[
-              if (i > 0) Container(width: 1, color: AppColors.divider),
-              Expanded(child: _Segment(label: labelOf(o), selected: o == value, onTap: () => onChanged(o))),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Segment extends StatelessWidget {
-  const _Segment({required this.label, required this.selected, required this.onTap});
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      selected: selected,
-      inMutuallyExclusiveGroup: true,
-      button: true,
-      child: Material(
-        color: selected ? AppColors.accent : Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          splashFactory: NoSplash.splashFactory,
-          highlightColor: selected ? Colors.transparent : AppColors.inkAlpha(0.14),
-          hoverColor: selected ? Colors.transparent : AppColors.inkAlpha(0.07),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 40),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(label,
-                    style: AppText.body.copyWith(fontSize: 13, height: 1.2, color: selected ? AppColors.bg : AppColors.ink)),
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              left: w * index,
+              top: 0,
+              bottom: 0,
+              width: w,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: accentGradient,
+                  borderRadius: BorderRadius.circular(Radii.pill),
+                  boxShadow: [BoxShadow(color: AppColors.accent.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 3))],
+                ),
               ),
             ),
-          ),
-        ),
-      ),
+            Row(
+              children: [
+                for (final o in options)
+                  Expanded(
+                    child: Semantics(
+                      selected: o == value,
+                      inMutuallyExclusiveGroup: true,
+                      button: true,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => onChanged(o),
+                        child: Center(
+                          child: AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 180),
+                            style: AppText.body.copyWith(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: o == value ? Colors.white : AppColors.muted,
+                            ),
+                            child: Text(labelOf(o)),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        );
+      }),
     );
   }
 }
 
-/// Square chip used for body parts (toggle) and quick picks.
+/// Pill chip. Selected chips fill with [hue].
 class AppChip extends StatelessWidget {
   const AppChip({
     super.key,
@@ -163,8 +236,7 @@ class AppChip extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.onLongPress,
-    this.selectedColor = AppColors.accent,
-    this.selectedBorder = AppColors.accent,
+    this.hue = Hue.indigo,
     this.compact = false,
   });
 
@@ -172,68 +244,103 @@ class AppChip extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
-  final Color selectedColor;
-  final Color selectedBorder;
-  final bool compact; // quick-pick size
+  final Hue hue;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final style = compact
-        ? AppText.body.copyWith(fontSize: 12, height: 1.2)
-        : AppText.body.copyWith(fontSize: 13, fontWeight: FontWeight.w600, height: 1.2);
+    final r = BorderRadius.circular(Radii.pill);
     return Semantics(
       selected: selected,
       button: true,
-      child: Material(
-        color: selected ? selectedColor : Colors.transparent,
-        shape: Border.all(color: selected ? selectedBorder : AppColors.divider),
-        child: InkWell(
-          onTap: onTap,
-          onLongPress: onLongPress,
-          splashFactory: NoSplash.splashFactory,
-          highlightColor: selected ? Colors.transparent : AppColors.inkAlpha(0.14),
-          hoverColor: selected ? Colors.transparent : AppColors.inkAlpha(0.07),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: compact ? 0 : 36),
-            child: Padding(
-              padding: compact ? const EdgeInsets.symmetric(horizontal: 10, vertical: 6) : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Text(label, style: style.copyWith(color: selected ? AppColors.bg : AppColors.ink)),
+      child: Pressable(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        borderRadius: r,
+        scale: 0.94,
+        decoration: BoxDecoration(
+          color: selected ? hue.solid : AppColors.surface,
+          borderRadius: r,
+          border: Border.all(color: selected ? hue.solid : AppColors.line),
+          boxShadow: selected ? [BoxShadow(color: hue.solid.withValues(alpha: 0.28), blurRadius: 10, offset: const Offset(0, 3))] : null,
+        ),
+        padding: compact ? const EdgeInsets.symmetric(horizontal: 12, vertical: 7) : const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!selected && !compact) ...[
+              Container(width: 7, height: 7, decoration: BoxDecoration(color: hue.solid, shape: BoxShape.circle)),
+              const SizedBox(width: 7),
+            ],
+            if (selected) ...[
+              const Icon(LucideIcons.check, size: 14, color: Colors.white),
+              const SizedBox(width: 5),
+            ],
+            Text(
+              label,
+              style: AppText.body.copyWith(
+                fontSize: compact ? 13 : 14,
+                fontWeight: FontWeight.w600,
+                height: 1.2,
+                color: selected ? Colors.white : AppColors.ink,
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// A tappable list row with a 1px bottom rule and an ink @ 4% pressed overlay.
-class RuledRow extends StatelessWidget {
-  const RuledRow({super.key, required this.onTap, required this.child, this.padding = const EdgeInsets.symmetric(vertical: 12)});
+/// Filled circle with a number, e.g. exercise and set indexes.
+class NumberBadge extends StatelessWidget {
+  const NumberBadge(this.number, {super.key, this.size = 30, this.hue = Hue.indigo, this.filled = true});
 
-  final VoidCallback onTap;
-  final Widget child;
-  final EdgeInsetsGeometry padding;
+  final int number;
+  final double size;
+  final Hue hue;
+  final bool filled;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: onTap,
-        splashFactory: NoSplash.splashFactory,
-        highlightColor: AppColors.inkAlpha(0.04),
-        hoverColor: AppColors.inkAlpha(0.04),
-        child: Container(
-          decoration: const BoxDecoration(border: Border(bottom: Rule.thinSide)),
-          padding: padding,
-          child: child,
-        ),
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        gradient: filled ? fillGradient(Color.lerp(hue.solid, Colors.white, 0.15)!, hue.solid) : null,
+        color: filled ? null : hue.tint,
+        shape: BoxShape.circle,
       ),
+      child: Text('$number', style: AppText.badge.copyWith(fontSize: size * 0.43, color: filled ? Colors.white : hue.text)),
     );
   }
 }
 
-/// Bottom bar with a 2px top rule; padding 12/20 and [bottomGap] below.
+/// Rounded square tile with a gradient and a white icon.
+class IconTile extends StatelessWidget {
+  const IconTile({super.key, required this.icon, required this.hue, this.size = 44});
+
+  final IconData icon;
+  final Hue hue;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        gradient: fillGradient(Color.lerp(hue.solid, Colors.white, 0.25)!, hue.solid),
+        borderRadius: BorderRadius.circular(size * 0.32),
+        boxShadow: [BoxShadow(color: hue.solid.withValues(alpha: 0.28), blurRadius: 12, offset: const Offset(0, 4))],
+      ),
+      child: Icon(icon, size: size * 0.48, color: Colors.white),
+    );
+  }
+}
+
+/// Bottom area holding a screen's main action, above the navigation bar.
 class BottomBar extends StatelessWidget {
   const BottomBar({super.key, required this.child});
 
@@ -242,8 +349,15 @@ class BottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(border: Border(top: Rule.thickSide)),
-      padding: EdgeInsets.fromLTRB(Space.side, 12, Space.side, bottomGap(context)),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AppColors.bg.withValues(alpha: 0), AppColors.bg, AppColors.bg],
+          stops: const [0, 0.25, 1],
+        ),
+      ),
+      padding: EdgeInsets.fromLTRB(Space.side, 16, Space.side, bottomGap(context, min: 20)),
       child: child,
     );
   }
@@ -254,4 +368,21 @@ class BottomBar extends StatelessWidget {
 double bottomGap(BuildContext context, {double min = 24}) {
   final inset = MediaQuery.viewPaddingOf(context).bottom;
   return inset + 12 > min ? inset + 12 : min;
+}
+
+/// Grab handle at the top of a bottom sheet.
+class SheetHandle extends StatelessWidget {
+  const SheetHandle({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.only(top: 10, bottom: 4),
+        width: 40,
+        height: 5,
+        decoration: BoxDecoration(color: AppColors.line, borderRadius: BorderRadius.circular(Radii.pill)),
+      ),
+    );
+  }
 }

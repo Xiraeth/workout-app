@@ -24,24 +24,23 @@ class SettingsSheet extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
 
-    return Container(
-      decoration: const BoxDecoration(border: Border(top: BorderSide(color: AppColors.ink, width: 2))),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(Space.side, 10, 12, 10),
-            decoration: const BoxDecoration(border: Border(bottom: Rule.thickSide)),
-            child: Row(
-              children: [
-                Expanded(child: Text('Settings', style: AppText.body.copyWith(fontSize: 15, fontWeight: FontWeight.w800, height: 1.2))),
-                AppButton(label: 'Done', variant: BtnVariant.ghost, onPressed: () => Navigator.of(context).pop()),
-              ],
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SheetHandle(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(Space.side, 6, 10, 6),
+          child: Row(
+            children: [
+              Expanded(child: Text('Settings', style: AppText.h3)),
+              AppButton(label: 'Done', variant: BtnVariant.ghost, height: 40, onPressed: () => Navigator.of(context).pop()),
+            ],
           ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(Space.side, 18, Space.side, bottomGap(context, min: 28)),
+        ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(Space.side, 8, Space.side, bottomGap(context, min: 28)),
+          child: AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -52,7 +51,7 @@ class SettingsSheet extends ConsumerWidget {
                   labelOf: (u) => u.name,
                   onChanged: notifier.setUnit,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 const FieldLabel('Week starts on'),
                 SegControl<WeekStart>(
                   options: WeekStart.values,
@@ -60,13 +59,13 @@ class SettingsSheet extends ConsumerWidget {
                   labelOf: (w) => w.label,
                   onChanged: notifier.setWeekStart,
                 ),
-                const SizedBox(height: 8),
-                Text('Units are labels only; logged numbers are not converted.', style: AppText.muted12),
+                const SizedBox(height: 12),
+                Text('Units are labels only; logged numbers are not converted.', style: AppText.tiny),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

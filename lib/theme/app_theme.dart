@@ -3,29 +3,29 @@ import 'package:flutter/services.dart';
 
 import 'tokens.dart';
 
-/// Flat, Swiss-modernist theme: radius 0, no shadows, no ripples.
+/// Light, rounded theme. Most components are custom widgets; this covers the
+/// Material pieces still in use (text fields, date picker, sheets, dialogs).
 ThemeData buildAppTheme() {
-  const square = RoundedRectangleBorder();
+  RoundedRectangleBorder rounded(double r) => RoundedRectangleBorder(borderRadius: BorderRadius.circular(r));
   final scheme = ColorScheme.light(
     primary: AppColors.accent,
-    onPrimary: AppColors.bg,
+    onPrimary: Colors.white,
     secondary: AppColors.accent,
-    onSecondary: AppColors.bg,
-    surface: AppColors.bg,
+    onSecondary: Colors.white,
+    surface: AppColors.surface,
     onSurface: AppColors.ink,
-    surfaceContainerHighest: AppColors.surface,
-    outline: AppColors.divider,
-    error: AppColors.accent700,
+    surfaceContainerHighest: AppColors.field,
+    surfaceContainerHigh: AppColors.surface,
+    outline: AppColors.line,
+    error: AppColors.missed,
   );
 
-  final inputBorder = WidgetStateInputBorder.resolveWith((states) {
-    final color = states.contains(WidgetState.focused)
-        ? AppColors.accent
-        : states.contains(WidgetState.hovered)
-            ? AppColors.inkAlpha(0.45)
-            : AppColors.divider;
-    return OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: color));
-  });
+  final fieldBorder = WidgetStateInputBorder.resolveWith((states) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(Radii.field),
+        borderSide: states.contains(WidgetState.focused)
+            ? const BorderSide(color: AppColors.accent, width: 2)
+            : BorderSide.none,
+      ));
 
   final base = ThemeData(useMaterial3: true, colorScheme: scheme, fontFamily: AppText.family);
 
@@ -33,60 +33,51 @@ ThemeData buildAppTheme() {
     scaffoldBackgroundColor: AppColors.bg,
     splashFactory: NoSplash.splashFactory,
     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    visualDensity: VisualDensity.standard,
     textTheme: base.textTheme.apply(bodyColor: AppColors.ink, displayColor: AppColors.ink, fontFamily: AppText.family),
     textSelectionTheme: TextSelectionThemeData(
       cursorColor: AppColors.accent,
-      selectionColor: AppColors.accentAlpha(0.3),
+      selectionColor: AppColors.accent.withValues(alpha: 0.25),
       selectionHandleColor: AppColors.accent,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.surface,
+      fillColor: AppColors.field,
       hoverColor: Colors.transparent,
       isDense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      hintStyle: AppText.input.copyWith(color: AppColors.inkAlpha(0.35)),
-      border: inputBorder,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+      hintStyle: AppText.input.copyWith(color: AppColors.faint),
+      border: fieldBorder,
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: AppColors.accent,
-        shape: square,
-        textStyle: AppText.button,
-        splashFactory: NoSplash.splashFactory,
-      ),
+      style: TextButton.styleFrom(foregroundColor: AppColors.accent, textStyle: AppText.button, shape: rounded(12)),
     ),
-    bottomSheetTheme: const BottomSheetThemeData(
+    bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: AppColors.bg,
       modalBackgroundColor: AppColors.bg,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       modalElevation: 0,
-      shape: square,
-      clipBehavior: Clip.hardEdge,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(Radii.sheet))),
+      clipBehavior: Clip.antiAlias,
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      shape: square,
+      shape: rounded(24),
       barrierColor: AppColors.scrim,
     ),
     datePickerTheme: DatePickerThemeData(
-      backgroundColor: AppColors.bg,
+      backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      shape: square,
-      headerBackgroundColor: AppColors.ink,
-      headerForegroundColor: AppColors.bg,
-      dayShape: const WidgetStatePropertyAll(square),
-      yearShape: const WidgetStatePropertyAll(square),
+      shape: rounded(24),
+      headerBackgroundColor: AppColors.accent,
+      headerForegroundColor: Colors.white,
       todayBorder: const BorderSide(color: AppColors.accent),
-      dividerColor: AppColors.divider,
-      cancelButtonStyle: TextButton.styleFrom(foregroundColor: AppColors.accent700, shape: square, textStyle: AppText.button),
-      confirmButtonStyle: TextButton.styleFrom(foregroundColor: AppColors.accent700, shape: square, textStyle: AppText.button),
-      inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder(borderRadius: BorderRadius.zero)),
+      dividerColor: AppColors.line,
+      cancelButtonStyle: TextButton.styleFrom(foregroundColor: AppColors.muted, textStyle: AppText.button),
+      confirmButtonStyle: TextButton.styleFrom(foregroundColor: AppColors.accent, textStyle: AppText.button),
     ),
     appBarTheme: const AppBarTheme(systemOverlayStyle: overlayStyle),
   );

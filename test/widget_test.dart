@@ -8,6 +8,8 @@ import 'package:workoutlog/models/enums.dart';
 import 'package:workoutlog/models/session.dart';
 import 'package:workoutlog/screens/week_screen.dart';
 import 'package:workoutlog/state/providers.dart';
+import 'package:workoutlog/widgets/app_buttons.dart';
+import 'package:workoutlog/widgets/settings_sheet.dart';
 import 'package:workoutlog/utils/dates.dart';
 
 final today = DateTime(2026, 11, 11); // a Wednesday
@@ -31,14 +33,16 @@ Future<ProviderContainer> pumpApp(WidgetTester tester, {List<Session> sessions =
 }
 
 bool isEnabled(WidgetTester tester, Finder label) =>
-    tester.widget<ButtonStyleButton>(find.ancestor(of: label, matching: find.byWidgetPredicate((w) => w is ButtonStyleButton))).enabled;
+    tester.widget<AppButton>(find.ancestor(of: label, matching: find.byType(AppButton))).onPressed != null;
 
 Future<void> tapText(WidgetTester tester, String text) async {
   if (find.text(text).evaluate().isEmpty) {
     // Lazily built list item: scroll the front-most list until it exists.
     await tester.scrollUntilVisible(find.text(text), 200, scrollable: find.descendant(of: find.byType(ListView).last, matching: find.byType(Scrollable)).first);
   }
-  await tester.ensureVisible(find.text(text));
+  // Centre it, so floating bottom bars don't cover it.
+  await Scrollable.ensureVisible(tester.element(find.text(text)), alignment: 0.5);
+  await tester.pumpAndSettle();
   await tester.tap(find.text(text));
   await tester.pumpAndSettle();
 }
@@ -56,10 +60,10 @@ void main() {
     expect(find.text('Wednesday 11 November'), findsOneWidget);
     expect(find.text('TODAY'), findsOneWidget);
     expect(find.text('Quads'), findsOneWidget);
-    expect(find.text('Planned'), findsOneWidget);
-    expect(find.text('COMING UP'), findsOneWidget);
+    expect(find.text('Planned'), findsNWidgets(2)); // the status tag and the week summary
+    expect(find.text('Coming up'), findsOneWidget);
     expect(find.text('Back · Biceps'), findsOneWidget);
-    expect(find.text('FRI 13'), findsOneWidget);
+    expect(find.text('FRI'), findsOneWidget);
     expect(find.text('New session · Wed 11'), findsOneWidget);
 
     // Yesterday's unfinished session shows as missed.
@@ -124,7 +128,7 @@ void main() {
     expect(find.text('TIME (SEC)'), findsOneWidget);
 
     // One set: remove is disabled.
-    expect(tester.widget<IconButton>(find.ancestor(of: find.byTooltip('Remove set'), matching: find.byType(IconButton))).onPressed, isNull);
+    expect(tester.widget<AppIconButton>(find.ancestor(of: find.byTooltip('Remove set'), matching: find.byType(AppIconButton))).onPressed, isNull);
 
     // Add set copies the last set.
     await tester.enterText(find.widgetWithText(TextField, '45'), '30');
@@ -188,10 +192,10 @@ void main() {
     expect(find.text('Shoulder press'), findsNWidgets(2)); // chip + the row behind the sheet
     await tester.tap(find.descendant(of: find.byType(Wrap), matching: find.text('Shoulder press')));
     await tester.pumpAndSettle();
-    expect(find.text('WEIGHT'), findsOneWidget);
     expect(find.text('New exercise. Saving adds it to your exercises.'), findsNothing);
     await tapText(tester, 'Save');
     expect(c.read(exerciseLibraryProvider).where((t) => t.name == 'Shoulder press'), hasLength(1));
+    expect(c.read(sessionsProvider).single.exercises.last.equipment, Equipment.freeWeights);
   });
 
   testWidgets('holding a quick pick removes it from the list', (tester) async {
@@ -243,7 +247,8 @@ void main() {
     await tester.pumpAndSettle();
     await tapText(tester, 'Sunday');
     await tapText(tester, 'lb');
-    await tapText(tester, 'Done');
+    await tester.tap(find.descendant(of: find.byType(SettingsSheet), matching: find.text('Done')));
+    await tester.pumpAndSettle();
     expect(c.read(settingsProvider).weekStart, WeekStart.sunday);
     expect(c.read(settingsProvider).unit, WeightUnit.lb);
     // The strip now starts on Sunday 8 November.

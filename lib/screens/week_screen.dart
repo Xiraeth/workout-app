@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:lucide_icons_flutter/lucide_icons_500.dart';
 
+import '../models/enums.dart';
 import '../models/session.dart';
 import '../state/providers.dart';
 import '../theme/app_theme.dart';
@@ -35,110 +35,114 @@ class WeekScreen extends ConsumerWidget {
     final upcoming = comingUp(sessions, today: today, selected: selected);
     final rel = relativeDay(selected, today);
 
+    final weekStart = weekStartFor(selected, settings.weekStart);
+    final week = sessions.where((s) => !s.date.isBefore(weekStart) && s.date.isBefore(addDays(weekStart, 7))).toList();
+    final done = week.where((s) => s.done).toList();
+    final planned = week.where((s) => s.status(today) == SessionStatus.planned).length;
+    final setsDone = done.fold(0, (n, s) => n + s.exercises.fold(0, (m, e) => m + e.sets.where((x) => x.value != null).length));
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: overlayStyle,
       child: Scaffold(
         body: SafeArea(
           bottom: false,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Stack(
             children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.fromLTRB(Space.side, 8, Space.side, 14),
-                decoration: const BoxDecoration(border: Border(bottom: Rule.thickSide)),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('WEEK ${isoWeek(selected)} · ${isoWeekYear(selected)}',
-                              style: AppText.caps(11, em: 0.1, color: AppColors.accent700)),
-                          Text(monthLong(selected), style: AppText.h1, maxLines: 1, overflow: TextOverflow.ellipsis),
+              ListView(
+                padding: const EdgeInsets.only(bottom: 120),
+                children: [
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(Space.side, 12, Space.side, 16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('WEEK ${isoWeek(selected)} · ${isoWeekYear(selected)}', style: AppText.overline),
+                              const SizedBox(height: 2),
+                              Text(monthLong(selected), style: AppText.h1, maxLines: 1, overflow: TextOverflow.ellipsis),
+                            ],
+                          ),
+                        ),
+                        AppIconButton(icon: LucideIcons.settings, tooltip: 'Settings', onPressed: () => showSettingsSheet(context)),
+                        const SizedBox(width: 8),
+                        AppIconButton(
+                          icon: LucideIcons.chevronLeft,
+                          tooltip: 'Previous week',
+                          onPressed: () => ref.read(selectedDateProvider.notifier).shift(-7),
+                        ),
+                        const SizedBox(width: 8),
+                        AppIconButton(
+                          icon: LucideIcons.chevronRight,
+                          tooltip: 'Next week',
+                          onPressed: () => ref.read(selectedDateProvider.notifier).shift(7),
+                        ),
+                      ],
+                    ),
+                  ),
+                  WeekStrip(
+                    selected: selected,
+                    today: today,
+                    weekStart: settings.weekStart,
+                    sessions: sessions,
+                    onSelect: ref.read(selectedDateProvider.notifier).select,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(Space.side, 16, Space.side, 0),
+                    child: WeekSummary(done: done.length, planned: planned, sets: setsDone),
+                  ),
+
+                  // The selected day
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(Space.side, 28, Space.side, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 2, bottom: 12),
+                          child: Row(
+                            children: [
+                              Expanded(child: Text(dayTitle(selected), style: AppText.h4)),
+                              if (rel.isNotEmpty) TintPill(rel.toUpperCase()),
+                            ],
+                          ),
+                        ),
+                        for (final (i, s) in daySessions.indexed) ...[
+                          if (i > 0) const SizedBox(height: 12),
+                          SessionCard(session: s, today: today, onTap: () => _open(context, s.id)),
                         ],
-                      ),
-                    ),
-                    AppIconButton(
-                      icon: LucideIcons.settings,
-                      tooltip: 'Settings',
-                      onPressed: () => showSettingsSheet(context),
-                    ),
-                    const SizedBox(width: 4),
-                    AppIconButton(
-                      icon: LucideIcons.chevronLeft,
-                      tooltip: 'Previous week',
-                      bordered: true,
-                      onPressed: () => ref.read(selectedDateProvider.notifier).shift(-7),
-                    ),
-                    const SizedBox(width: 4),
-                    AppIconButton(
-                      icon: LucideIcons.chevronRight,
-                      tooltip: 'Next week',
-                      bordered: true,
-                      onPressed: () => ref.read(selectedDateProvider.notifier).shift(7),
-                    ),
-                  ],
-                ),
-              ),
-              WeekStrip(
-                selected: selected,
-                today: today,
-                weekStart: settings.weekStart,
-                sessions: sessions,
-                onSelect: ref.read(selectedDateProvider.notifier).select,
-              ),
-              // Body
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(Space.side),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Expanded(child: Text(dayTitle(selected), style: AppText.h4)),
-                          if (rel.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            Text(rel.toUpperCase(), style: AppText.caps(12, em: 0.08, color: AppColors.accent700)),
-                          ],
+                        if (daySessions.isEmpty) const _EmptyDay(),
+                        if (upcoming.isNotEmpty) ...[
+                          const SizedBox(height: 28),
+                          const SectionTitle('Coming up'),
+                          UpcomingList(sessions: upcoming, onOpen: (s) => _open(context, s.id)),
                         ],
-                      ),
+                      ],
                     ),
-                    for (final (i, s) in daySessions.indexed) ...[
-                      if (i > 0) const SizedBox(height: 8),
-                      SessionCard(session: s, today: today, onTap: () => _open(context, s.id)),
-                    ],
-                    if (daySessions.isEmpty) const _EmptyDay(),
-                    if (upcoming.isNotEmpty) ...[
-                      Container(
-                        margin: const EdgeInsets.only(top: 28),
-                        padding: const EdgeInsets.only(bottom: 8),
-                        decoration: const BoxDecoration(border: Border(bottom: Rule.thickSide)),
-                        child: Text('COMING UP', style: AppText.h6),
-                      ),
-                      for (final s in upcoming) UpcomingRow(session: s, onTap: () => _open(context, s.id)),
-                    ],
-                  ],
-                ),
+                  ),
+                ],
               ),
-              BottomBar(
-                child: AppButton(
-                  label: 'New session · ${dayShort(selected)}',
-                  icon: LucideIcons500.plus,
-                  iconSize: 18,
-                  variant: BtnVariant.primary,
-                  block: true,
-                  height: 48,
-                  fontSize: 15,
-                  onPressed: () {
-                    final s = Session(date: selected);
-                    ref.read(sessionsProvider.notifier).add(s);
-                    _open(context, s.id);
-                  },
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: BottomBar(
+                  child: AppButton(
+                    label: 'New session · ${dayShort(selected)}',
+                    icon: LucideIcons.plus,
+                    variant: BtnVariant.primary,
+                    block: true,
+                    height: 54,
+                    fontSize: 16,
+                    onPressed: () {
+                      final s = Session(date: selected);
+                      ref.read(sessionsProvider.notifier).add(s);
+                      _open(context, s.id);
+                    },
+                  ),
                 ),
               ),
             ],
@@ -154,14 +158,22 @@ class _EmptyDay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 18),
-      decoration: const BoxDecoration(border: Border(top: Rule.thickSide, bottom: Rule.thickSide)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return AppCard(
+      padding: const EdgeInsets.all(18),
+      child: Row(
         children: [
-          Text('Nothing scheduled', style: AppText.body.copyWith(fontSize: 17, fontWeight: FontWeight.w800, height: 1.4)),
-          Text('Plan a session for this day, or log one you already did.', style: AppText.muted13.copyWith(height: 1.55)),
+          const IconTile(icon: LucideIcons.coffee, hue: Hue.amber),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Nothing scheduled', style: AppText.title),
+                const SizedBox(height: 2),
+                Text('Plan a session for this day, or log one you already did.', style: AppText.small),
+              ],
+            ),
+          ),
         ],
       ),
     );

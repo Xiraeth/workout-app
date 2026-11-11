@@ -2,22 +2,107 @@ import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
 
-enum BtnVariant { primary, secondary, ghost }
+/// Anything tappable: shrinks slightly while pressed and shows a soft overlay.
+/// Disabled when both [onTap] and [onLongPress] are null.
+class Pressable extends StatefulWidget {
+  const Pressable({
+    super.key,
+    required this.onTap,
+    required this.child,
+    this.onLongPress,
+    this.decoration,
+    this.borderRadius = BorderRadius.zero,
+    this.padding = EdgeInsets.zero,
+    this.overlay,
+    this.scale = 0.97,
+  });
 
-/// Flat, square button. Full-width ([block]) buttons keep their label left-aligned.
-/// Disabled (onPressed == null) shows the enabled look at 45% opacity.
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final Widget child;
+  final BoxDecoration? decoration;
+  final BorderRadius borderRadius;
+  final EdgeInsetsGeometry padding;
+  final Color? overlay;
+  final double scale;
+
+  @override
+  State<Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<Pressable> {
+  bool _down = false;
+
+  bool get _enabled => widget.onTap != null || widget.onLongPress != null;
+
+  void _set(bool v) {
+    if (_down != v && mounted) setState(() => _down = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: _enabled ? (_) => _set(true) : null,
+      onPointerUp: (_) => _set(false),
+      onPointerCancel: (_) => _set(false),
+      child: AnimatedScale(
+        scale: _down ? widget.scale : 1,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        child: DecoratedBox(
+          decoration: widget.decoration ?? const BoxDecoration(),
+          child: Material(
+            type: MaterialType.transparency,
+            borderRadius: widget.borderRadius,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: widget.onTap,
+              onLongPress: widget.onLongPress,
+              borderRadius: widget.borderRadius,
+              splashFactory: NoSplash.splashFactory,
+              highlightColor: widget.overlay ?? AppColors.inkAlpha(0.05),
+              hoverColor: widget.overlay ?? AppColors.inkAlpha(0.03),
+              child: Padding(padding: widget.padding, child: widget.child),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum BtnVariant {
+  /// Indigo gradient with a glow.
+  primary,
+
+  /// Indigo tint with indigo text.
+  tonal,
+
+  /// White with a soft shadow.
+  neutral,
+
+  /// Text only.
+  ghost,
+
+  /// Solid coral, for destructive confirmations.
+  danger,
+
+  /// Green tint, for "done" states.
+  success,
+}
+
 class AppButton extends StatelessWidget {
   const AppButton({
     super.key,
     required this.label,
     required this.onPressed,
-    this.variant = BtnVariant.secondary,
+    this.variant = BtnVariant.neutral,
     this.icon,
-    this.iconSize = 16,
     this.block = false,
-    this.height,
-    this.fontSize = 14,
+    this.height = 44,
+    this.fontSize = 15,
     this.foreground,
+    this.radius = Radii.button,
     this.padding,
   });
 
@@ -25,132 +110,112 @@ class AppButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final BtnVariant variant;
   final IconData? icon;
-  final double iconSize;
   final bool block;
-  final double? height;
+  final double height;
   final double fontSize;
   final Color? foreground;
+  final double radius;
   final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg, overlay, side) = switch (variant) {
+    final r = BorderRadius.circular(radius);
+    final (BoxDecoration deco, Color fg, Color overlay) = switch (variant) {
       BtnVariant.primary => (
-          WidgetStateProperty.resolveWith<Color?>((s) => s.contains(WidgetState.pressed)
-              ? AppColors.accent700
-              : s.contains(WidgetState.hovered)
-                  ? AppColors.accent600
-                  : AppColors.accent),
-          AppColors.bg,
-          const WidgetStatePropertyAll<Color?>(Colors.transparent),
-          BorderSide.none,
+          BoxDecoration(gradient: accentGradient, borderRadius: r, boxShadow: onPressed == null ? null : Shadows.glow(AppColors.accent)),
+          Colors.white,
+          Colors.white.withValues(alpha: 0.12),
         ),
-      BtnVariant.secondary => (
-          const WidgetStatePropertyAll<Color?>(Colors.transparent),
+      BtnVariant.tonal => (BoxDecoration(color: AppColors.accentTint, borderRadius: r), AppColors.accentDark, AppColors.accent.withValues(alpha: 0.08)),
+      BtnVariant.neutral => (
+          BoxDecoration(color: AppColors.surface, borderRadius: r, boxShadow: Shadows.small),
           AppColors.ink,
-          _overlay(AppColors.ink, 0.07, 0.14),
-          const BorderSide(color: AppColors.divider),
+          AppColors.inkAlpha(0.05),
         ),
-      BtnVariant.ghost => (
-          const WidgetStatePropertyAll<Color?>(Colors.transparent),
-          AppColors.accent,
-          _overlay(AppColors.accent, 0.10, 0.18),
-          BorderSide.none,
+      BtnVariant.ghost => (BoxDecoration(borderRadius: r), AppColors.accent, AppColors.accent.withValues(alpha: 0.08)),
+      BtnVariant.danger => (
+          BoxDecoration(color: AppColors.missed, borderRadius: r, boxShadow: Shadows.glow(AppColors.missed)),
+          Colors.white,
+          Colors.white.withValues(alpha: 0.12),
         ),
+      BtnVariant.success => (BoxDecoration(color: AppColors.doneTint, borderRadius: r), AppColors.doneText, AppColors.done.withValues(alpha: 0.08)),
     };
-    final fgColor = foreground ?? fg;
+    final color = foreground ?? fg;
 
-    final style = ButtonStyle(
-      backgroundColor: bg,
-      foregroundColor: WidgetStatePropertyAll(fgColor),
-      overlayColor: overlay,
-      side: WidgetStateProperty.resolveWith((s) =>
-          s.contains(WidgetState.focused) ? const BorderSide(color: AppColors.accent, width: 2) : side),
-      shape: const WidgetStatePropertyAll(RoundedRectangleBorder()),
-      elevation: const WidgetStatePropertyAll(0),
-      padding: WidgetStatePropertyAll(padding ??
-          EdgeInsets.symmetric(horizontal: variant == BtnVariant.ghost ? Space.s1 : 14.4, vertical: Space.s2)),
-      minimumSize: WidgetStatePropertyAll(Size(0, height ?? 36)),
-      fixedSize: height != null ? WidgetStatePropertyAll(Size.fromHeight(height!)) : null,
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      alignment: block ? Alignment.centerLeft : Alignment.center,
-      textStyle: WidgetStatePropertyAll(AppText.button.copyWith(fontSize: fontSize)),
-      splashFactory: NoSplash.splashFactory,
+    final button = Pressable(
+      onTap: onPressed,
+      decoration: deco,
+      borderRadius: r,
+      overlay: overlay,
+      padding: padding ?? EdgeInsets.symmetric(horizontal: variant == BtnVariant.ghost ? 10 : 16),
+      child: SizedBox(
+        height: height,
+        child: Row(
+          mainAxisSize: block ? MainAxisSize.max : MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) ...[Icon(icon, size: 18, color: color), const SizedBox(width: 8)],
+            Flexible(
+              child: Text(label, overflow: TextOverflow.ellipsis, style: AppText.button.copyWith(fontSize: fontSize, color: color)),
+            ),
+          ],
+        ),
+      ),
     );
-
-    final child = Row(
-      mainAxisSize: block ? MainAxisSize.max : MainAxisSize.min,
-      children: [
-        if (icon != null) ...[Icon(icon, size: iconSize, color: fgColor), const SizedBox(width: 6)],
-        Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
-      ],
-    );
-
-    // The style ignores the disabled state, so a disabled button keeps its colours and the opacity dims it.
-    final button = TextButton(onPressed: onPressed, style: style, child: child);
 
     final sized = block ? SizedBox(width: double.infinity, child: button) : button;
-    return onPressed == null ? Opacity(opacity: 0.45, child: sized) : sized;
+    return Semantics(
+      button: true,
+      enabled: onPressed != null,
+      child: onPressed == null ? Opacity(opacity: 0.45, child: sized) : sized,
+    );
   }
 }
 
-WidgetStateProperty<Color?> _overlay(Color c, double hover, double pressed) => WidgetStateProperty.resolveWith((s) {
-      if (s.contains(WidgetState.pressed)) return c.withValues(alpha: pressed);
-      if (s.contains(WidgetState.hovered) || s.contains(WidgetState.focused)) return c.withValues(alpha: hover);
-      return null;
-    });
-
-/// 36×36 square icon button.
+/// Round icon button: white with a soft shadow, or a tint when [tint] is set.
 class AppIconButton extends StatelessWidget {
   const AppIconButton({
     super.key,
     required this.icon,
     required this.onPressed,
     required this.tooltip,
-    this.bordered = false,
-    this.size = 18,
-    this.pressedBg,
-    this.pressedFg,
+    this.size = 40,
+    this.iconSize = 18,
+    this.tint,
+    this.iconColor = AppColors.ink,
+    this.flat = false,
   });
 
   final IconData icon;
   final VoidCallback? onPressed;
   final String tooltip;
-  final bool bordered;
   final double size;
-  final Color? pressedBg;
-  final Color? pressedFg;
+  final double iconSize;
+  final Color? tint;
+  final Color iconColor;
+  final bool flat; // no background or shadow
 
   @override
   Widget build(BuildContext context) {
-    final style = ButtonStyle(
-      backgroundColor: WidgetStateProperty.resolveWith((s) {
-        if (pressedBg != null && (s.contains(WidgetState.pressed) || s.contains(WidgetState.hovered))) return pressedBg;
-        return Colors.transparent;
-      }),
-      foregroundColor: WidgetStateProperty.resolveWith((s) {
-        if (pressedFg != null && (s.contains(WidgetState.pressed) || s.contains(WidgetState.hovered))) return pressedFg;
-        return AppColors.ink;
-      }),
-      overlayColor: pressedBg != null ? const WidgetStatePropertyAll(Colors.transparent) : _overlay(AppColors.ink, 0.07, 0.14),
-      side: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.focused)
-          ? const BorderSide(color: AppColors.accent, width: 2)
-          : bordered
-              ? const BorderSide(color: AppColors.divider)
-              : BorderSide.none),
-      shape: const WidgetStatePropertyAll(RoundedRectangleBorder()),
-      padding: const WidgetStatePropertyAll(EdgeInsets.zero),
-      fixedSize: const WidgetStatePropertyAll(Size(36, 36)),
-      minimumSize: const WidgetStatePropertyAll(Size(36, 36)),
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      splashFactory: NoSplash.splashFactory,
+    final r = BorderRadius.circular(size / 2);
+    final button = Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        enabled: onPressed != null,
+        label: tooltip,
+        excludeSemantics: true,
+        child: Pressable(
+          onTap: onPressed,
+          scale: 0.92,
+          borderRadius: r,
+          decoration: flat
+              ? null
+              : BoxDecoration(color: tint ?? AppColors.surface, borderRadius: r, boxShadow: tint == null ? Shadows.small : null),
+          child: SizedBox(width: size, height: size, child: Icon(icon, size: iconSize, color: iconColor)),
+        ),
+      ),
     );
-    final button = IconButton(
-      onPressed: onPressed,
-      tooltip: tooltip,
-      style: style,
-      icon: Icon(icon, size: size),
-    );
-    return onPressed == null ? Opacity(opacity: 0.45, child: button) : button;
+    return onPressed == null ? Opacity(opacity: 0.4, child: button) : button;
   }
 }

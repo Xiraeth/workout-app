@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:lucide_icons_flutter/lucide_icons_500.dart';
 
 import '../models/enums.dart';
 import '../models/exercise.dart';
@@ -101,174 +100,198 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
     final isBw = _draft.equipment == Equipment.bodyweight;
     final isTime = _draft.measure == Measure.time;
 
-    // Typing filters the list; an unknown name will be added on save.
+    // Typing part of a name filters the list. An exact match (a picked or
+    // edited exercise) shows the whole list with it selected; an unknown name
+    // will be added on save.
     final library = ref.watch(exerciseLibraryProvider);
     final typed = nameKey(_draft.name);
-    final matches = typed.isEmpty ? library : library.where((t) => t.key.contains(typed)).toList();
-    final isNew = typed.isNotEmpty && !library.any((t) => t.key == typed);
+    final exact = library.any((t) => t.key == typed);
+    final matches = typed.isEmpty || exact ? library : library.where((t) => t.key.contains(typed)).toList();
+    final isNew = typed.isNotEmpty && !exact;
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.bg,
-        border: Border(top: BorderSide(color: AppColors.ink, width: 2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header: Cancel | title | Save
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: const BoxDecoration(border: Border(bottom: Rule.thickSide)),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: AppButton(label: 'Cancel', variant: BtnVariant.ghost, onPressed: () => Navigator.of(context).pop()),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SheetHandle(),
+        // Header: Cancel | title | Save
+        Padding(
+          padding: const EdgeInsets.fromLTRB(10, 2, 14, 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: AppButton(label: 'Cancel', variant: BtnVariant.ghost, height: 40, onPressed: () => Navigator.of(context).pop()),
+                ),
+              ),
+              Text(_isEdit ? 'Edit exercise' : 'New exercise', style: AppText.title),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: AppButton(
+                    label: 'Save',
+                    variant: BtnVariant.primary,
+                    height: 40,
+                    radius: Radii.pill,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    onPressed: _canSave ? _save : null,
                   ),
                 ),
-                Text(_isEdit ? 'Edit exercise' : 'New exercise',
-                    style: AppText.body.copyWith(fontSize: 15, fontWeight: FontWeight.w800, height: 1.2)),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: AppButton(label: 'Save', variant: BtnVariant.primary, onPressed: _canSave ? _save : null),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.fromLTRB(Space.side, 18, Space.side, keyboardOpen ? 28 : bottomGap(context, min: 28)),
-              children: [
-                const FieldLabel('Exercise'),
-                AppTextField(
-                  controller: _name,
-                  hint: 'e.g. Bench press',
-                  textCapitalization: TextCapitalization.sentences,
-                  onChanged: (v) => _set(_draft.copyWith(name: v)),
-                ),
-                const SizedBox(height: 20),
-
-                const FieldLabel('Your exercises', trailing: 'Hold to remove'),
-                const SizedBox(height: 3),
-                if (matches.isNotEmpty)
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      for (final t in matches)
-                        AppChip(
-                          label: t.name,
-                          compact: true,
-                          selected: t.key == typed,
-                          selectedColor: AppColors.ink,
-                          selectedBorder: AppColors.divider,
-                          onTap: () => _pick(t),
-                          onLongPress: () => _forget(t),
-                        ),
-                    ],
-                  ),
-                if (isNew)
-                  Padding(
-                    padding: EdgeInsets.only(top: matches.isEmpty ? 0 : 8),
-                    child: Text('New exercise. Saving adds it to your exercises.', style: AppText.muted12.copyWith(height: 1.4)),
-                  ),
-                const SizedBox(height: 20),
-
-                // Type
-                Container(
-                  padding: const EdgeInsets.only(top: 16),
-                  decoration: const BoxDecoration(border: Border(top: Rule.thickSide)),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const FieldLabel('Equipment'),
-                      SegControl<Equipment>(
-                        options: Equipment.values,
-                        value: _draft.equipment,
-                        labelOf: (e) => e.label,
-                        onChanged: (e) => _set(_draft.copyWith(equipment: e)),
-                      ),
-                      const SizedBox(height: 12),
-                      const FieldLabel('Measured by'),
-                      SegControl<Measure>(
-                        options: Measure.values,
-                        value: _draft.measure,
-                        labelOf: (m) => m.label,
-                        onChanged: (m) => _set(_draft.copyWith(measure: m)),
-                      ),
-                      const SizedBox(height: 12),
-                      const FieldLabel('Movement'),
-                      SegControl<Motion>(
-                        options: Motion.values,
-                        value: _draft.motion,
-                        labelOf: (m) => m.label,
-                        // Isometric holds are timed; the user can switch back.
-                        onChanged: (m) => _set(_draft.copyWith(motion: m, measure: m == Motion.isometric ? Measure.time : null)),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Sets
-                Container(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  decoration: const BoxDecoration(border: Border(bottom: Rule.thickSide)),
-                  child: _SetGrid(
-                    number: const _HeaderText('SET'),
-                    value: _HeaderText(isTime ? 'TIME (SEC)' : 'REPS'),
-                    weight: _HeaderText(isBw ? 'LOAD' : 'WEIGHT'),
-                    action: const SizedBox.shrink(),
-                  ),
-                ),
-                for (final (i, s) in _draft.sets.indexed)
-                  _SetRow(
-                    key: ValueKey(s.id),
-                    number: i + 1,
-                    entry: s,
-                    isBodyweight: isBw,
-                    isTime: isTime,
-                    unit: widget.unit,
-                    onChanged: (next) => _set(_draft.copyWith(sets: [for (final x in _draft.sets) x.id == next.id ? next : x])),
-                    onRemove: _draft.sets.length < 2
-                        ? null
-                        : () => _set(_draft.copyWith(sets: _draft.sets.where((x) => x.id != s.id).toList())),
-                  ),
-                const SizedBox(height: 8),
-                Text(
-                  isBw
-                      ? 'BW = your bodyweight. Add a vest or belt load, or leave blank.'
-                      : 'Total weight moved per set — bar plus plates, or per dumbbell.',
-                  style: AppText.muted12.copyWith(height: 1.4),
-                ),
-                const SizedBox(height: 12),
-                AppButton(label: 'Add set', icon: LucideIcons500.plus, block: true, height: 44, onPressed: _addSet),
-
-                if (_isEdit) ...[
-                  const SizedBox(height: 20),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: AppButton(
-                      label: 'Remove exercise from session',
-                      variant: BtnVariant.ghost,
-                      foreground: AppColors.accent700,
-                      onPressed: () => Navigator.of(context).pop(const ExerciseRemoved()),
+        ),
+        Expanded(
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(Space.side, 8, Space.side, keyboardOpen ? 28 : bottomGap(context, min: 28)),
+            children: [
+              // Name and quick picks
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const FieldLabel('Exercise'),
+                    AppTextField(
+                      controller: _name,
+                      hint: 'e.g. Bench press',
+                      textCapitalization: TextCapitalization.sentences,
+                      onChanged: (v) => _set(_draft.copyWith(name: v)),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 18),
+                    const FieldLabel('Your exercises', trailing: 'Hold to remove'),
+                    if (matches.isNotEmpty)
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final t in matches)
+                            AppChip(
+                              label: t.name,
+                              compact: true,
+                              selected: t.key == typed,
+                              onTap: () => _pick(t),
+                              onLongPress: () => _forget(t),
+                            ),
+                        ],
+                      ),
+                    if (isNew)
+                      Padding(
+                        padding: EdgeInsets.only(top: matches.isEmpty ? 0 : 10),
+                        child: Row(
+                          children: [
+                            const Icon(LucideIcons.sparkles, size: 15, color: AppColors.accent),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text('New exercise. Saving adds it to your exercises.',
+                                  style: AppText.tiny.copyWith(color: AppColors.accentDark, fontWeight: FontWeight.w600)),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Type
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const FieldLabel('Equipment'),
+                    SegControl<Equipment>(
+                      options: Equipment.values,
+                      value: _draft.equipment,
+                      labelOf: (e) => e.label,
+                      onChanged: (e) => _set(_draft.copyWith(equipment: e)),
+                    ),
+                    const SizedBox(height: 14),
+                    const FieldLabel('Measured by'),
+                    SegControl<Measure>(
+                      options: Measure.values,
+                      value: _draft.measure,
+                      labelOf: (m) => m.label,
+                      onChanged: (m) => _set(_draft.copyWith(measure: m)),
+                    ),
+                    const SizedBox(height: 14),
+                    const FieldLabel('Movement'),
+                    SegControl<Motion>(
+                      options: Motion.values,
+                      value: _draft.motion,
+                      labelOf: (m) => m.label,
+                      // Isometric holds are timed; the user can switch back.
+                      onChanged: (m) => _set(_draft.copyWith(motion: m, measure: m == Motion.isometric ? Measure.time : null)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Sets
+              AppCard(
+                padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _SetGrid(
+                        number: const _HeaderText('SET'),
+                        value: _HeaderText(isTime ? 'TIME (SEC)' : 'REPS'),
+                        weight: _HeaderText(isBw ? 'LOAD' : 'WEIGHT'),
+                        action: const SizedBox.shrink(),
+                      ),
+                    ),
+                    for (final (i, s) in _draft.sets.indexed)
+                      _SetRow(
+                        key: ValueKey(s.id),
+                        number: i + 1,
+                        entry: s,
+                        isBodyweight: isBw,
+                        isTime: isTime,
+                        unit: widget.unit,
+                        onChanged: (next) => _set(_draft.copyWith(sets: [for (final x in _draft.sets) x.id == next.id ? next : x])),
+                        onRemove: _draft.sets.length < 2
+                            ? null
+                            : () => _set(_draft.copyWith(sets: _draft.sets.where((x) => x.id != s.id).toList())),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(2, 4, 4, 12),
+                      child: Text(
+                        isBw
+                            ? 'BW = your bodyweight. Add a vest or belt load, or leave blank.'
+                            : 'Total weight moved per set — bar plus plates, or per dumbbell.',
+                        style: AppText.tiny,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: AppButton(label: 'Add set', icon: LucideIcons.plus, variant: BtnVariant.tonal, block: true, onPressed: _addSet),
+                    ),
+                  ],
+                ),
+              ),
+
+              if (_isEdit) ...[
+                const SizedBox(height: 14),
+                AppButton(
+                  label: 'Remove exercise from session',
+                  icon: LucideIcons.trash2,
+                  variant: BtnVariant.ghost,
+                  foreground: AppColors.missed,
+                  block: true,
+                  onPressed: () => Navigator.of(context).pop(const ExerciseRemoved()),
+                ),
               ],
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-/// Columns: 28px | 1fr | 1.2fr | 36px, gap 8.
+/// Columns: badge | value | weight | remove.
 class _SetGrid extends StatelessWidget {
   const _SetGrid({required this.number, required this.value, required this.weight, required this.action});
 
@@ -279,12 +302,12 @@ class _SetGrid extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        SizedBox(width: 28, child: number),
-        const SizedBox(width: 8),
+        SizedBox(width: 30, child: number),
+        const SizedBox(width: 10),
         Expanded(flex: 10, child: value),
         const SizedBox(width: 8),
-        Expanded(flex: 12, child: weight),
-        const SizedBox(width: 8),
+        Expanded(flex: 14, child: weight),
+        const SizedBox(width: 4),
         SizedBox(width: 36, child: action),
       ],
     );
@@ -296,8 +319,10 @@ class _HeaderText extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) =>
-      Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.caps(11, weight: FontWeight.w400, em: 0.08, color: AppColors.inkAlpha(0.6)));
+  Widget build(BuildContext context) => Text(text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: AppText.tiny.copyWith(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.6, color: AppColors.faint));
 }
 
 class _SetRow extends StatefulWidget {
@@ -348,31 +373,32 @@ class _SetRowState extends State<_SetRow> {
   @override
   Widget build(BuildContext context) {
     final e = widget.entry;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: const BoxDecoration(border: Border(bottom: Rule.thinSide)),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: _SetGrid(
-        number: Text('${widget.number}', style: AppText.body.copyWith(fontSize: 15, fontWeight: FontWeight.w800, height: 1.2)),
+        number: NumberBadge(widget.number, filled: false),
         value: AppTextField(
           controller: _value,
           hint: widget.isTime ? '45' : '10',
+          textAlign: TextAlign.center,
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(5)],
           semanticLabel: 'Set ${widget.number} ${widget.isTime ? 'seconds' : 'reps'}',
           onChanged: (v) => widget.onChanged(e.withValue(int.tryParse(v))),
         ),
         weight: Container(
-          height: 44,
+          height: 48,
           decoration: BoxDecoration(
-            color: AppColors.surface,
-            border: Border.all(color: _weightFocus.hasFocus ? AppColors.accent : AppColors.divider),
+            color: AppColors.field,
+            borderRadius: BorderRadius.circular(Radii.field),
+            border: Border.all(color: _weightFocus.hasFocus ? AppColors.accent : Colors.transparent, width: 2),
           ),
           child: Row(
             children: [
               if (widget.isBodyweight)
                 Padding(
                   padding: const EdgeInsets.only(left: 10),
-                  child: Text('BW +', style: AppText.body.copyWith(fontSize: 13, fontWeight: FontWeight.w800, height: 1)),
+                  child: Text('BW +', style: AppText.badge.copyWith(color: AppColors.accentDark)),
                 ),
               Expanded(
                 child: TextField(
@@ -393,21 +419,24 @@ class _SetRowState extends State<_SetRow> {
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                    hintStyle: AppText.input.copyWith(color: AppColors.inkAlpha(0.35)),
+                    hintStyle: AppText.input.copyWith(color: AppColors.faint),
                   ),
                   onChanged: (v) => widget.onChanged(e.withWeight(double.tryParse(v.replaceAll(',', '.')))),
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.only(right: 10),
-                child: Text(widget.unit.name, style: AppText.muted13),
+                child: Text(widget.unit.name, style: AppText.small),
               ),
             ],
           ),
         ),
         action: AppIconButton(
           icon: LucideIcons.x,
-          size: 16,
+          size: 36,
+          iconSize: 16,
+          flat: true,
+          iconColor: AppColors.muted,
           tooltip: 'Remove set',
           onPressed: widget.onRemove,
         ),
