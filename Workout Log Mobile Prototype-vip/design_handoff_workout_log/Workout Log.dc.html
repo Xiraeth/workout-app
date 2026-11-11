@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-b6553de1-2ee8-478c-88f3-4217e04708f4/styles.css">
+<script src="_ds/modernist-b6553de1-2ee8-478c-88f3-4217e04708f4/_ds_bundle.js"></script>
+<style>:root{--color-accent:#4b3bc4;--color-accent-100:#f2f0fd;--color-accent-200:#e1ddfa;--color-accent-300:#c7c0f4;--color-accent-400:#9d92ea;--color-accent-500:#6a5bdc;--color-accent-600:#3e2fa8;--color-accent-700:#30238a;--color-accent-800:#231a66;--color-accent-900:#171142}body{margin:0;background:var(--color-neutral-300)}a{color:var(--color-accent)}a:hover{color:var(--color-accent-600)}input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}input[type=number]{-moz-appearance:textfield}</style>
+</helmet>
+<div style="min-height:100vh;display:flex;justify-content:center;align-items:flex-start;flex-wrap:wrap;gap:48px;padding:40px 16px">
+<div style="width:390px;height:844px;flex:none;border:10px solid var(--color-text);border-radius:48px;overflow:hidden;background:var(--color-bg);position:relative;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);font-family:var(--font-body);color:var(--color-text)">
+<div style="height:44px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font-size:14px;font-weight:600">
+<span>9:41</span>
+<span style="width:24px;height:11px;border:1.5px solid var(--color-text);padding:1px;display:flex"><span style="flex:1;background:var(--color-text)"></span></span>
+</div>
+
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;display:flex;flex-direction:column;min-height:0">
+<div style="padding:8px 20px 14px;display:flex;align-items:flex-end;justify-content:space-between;border-bottom:2px solid var(--color-divider)">
+<div>
+<div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--color-accent-700)">Week {{ weekNo }} · {{ year }}</div>
+<h1 style="margin:0;font-size:42px">{{ monthLabel }}</h1>
+</div>
+<div style="display:flex;gap:4px">
+<button class="btn btn-secondary btn-icon" onClick="{{ prevWeek }}" aria-label="Previous week"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="m15 18-6-6 6-6"></path></svg></button>
+<button class="btn btn-secondary btn-icon" onClick="{{ nextWeek }}" aria-label="Next week"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="m9 18 6-6-6-6"></path></svg></button>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-bottom:2px solid var(--color-divider)">
+<sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+<button onClick="{{ d.onClick }}" style="appearance:none;border:0;border-right:1px solid var(--color-divider);background:{{ d.bg }};color:{{ d.fg }};padding:10px 0 12px 8px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;font-family:var(--font-body);cursor:pointer">
+<span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600">{{ d.letter }}</span>
+<span style="font-size:22px;font-weight:800;line-height:1.05">{{ d.num }}</span>
+<span style="width:8px;height:8px;background:{{ d.dotBg }};border:1.5px solid {{ d.dotBd }}"></span>
+</button>
+</sc-for>
+</div>
+<div style="flex:1;overflow:auto;padding:20px">
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:12px">
+<h4 style="margin:0">{{ dayTitle }}</h4>
+<span style="font-size:12px;font-weight:600;color:var(--color-accent-700);text-transform:uppercase;letter-spacing:.08em">{{ dayRel }}</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{ daySessions }}" as="s" hint-placeholder-count="1">
+<button onClick="{{ s.onOpen }}" class="card" style="width:100%;border:0;text-align:left;font:inherit;color:inherit;cursor:pointer;padding:14px" style-hover="background:var(--color-neutral-300)">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="card-kicker" style="color:var(--color-accent-700)">{{ s.meta }}</span><span class="{{ s.tagClass }}">{{ s.status }}</span></div>
+<div class="card-title" style="font-size:20px">{{ s.title }}</div>
+<p class="card-body">{{ s.exList }}</p>
+</button>
+</sc-for>
+</div>
+<sc-if value="{{ dayEmpty }}" hint-placeholder-val="{{ false }}">
+<div style="border-top:2px solid var(--color-divider);border-bottom:2px solid var(--color-divider);padding:18px 0">
+<div style="font-size:17px;font-weight:800">Nothing scheduled</div>
+<div class="text-muted" style="font-size:13px">Plan a session for this day, or log one you already did.</div>
+</div>
+</sc-if>
+<sc-if value="{{ hasUpcoming }}" hint-placeholder-val="{{ true }}">
+<h6 style="margin:28px 0 0;padding-bottom:8px;border-bottom:2px solid var(--color-divider)">Coming up</h6>
+<sc-for list="{{ upcoming }}" as="s" hint-placeholder-count="2">
+<button onClick="{{ s.onOpen }}" style="width:100%;appearance:none;background:transparent;border:0;border-bottom:1px solid var(--color-divider);padding:12px 0;display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;font:inherit;color:inherit;cursor:pointer" style-hover="background:color-mix(in srgb,var(--color-text) 4%,transparent)">
+<span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">{{ s.kicker }}</span>
+<span style="min-width:0"><span style="display:block;font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.title }}</span><span class="text-muted" style="font-size:12px">{{ s.meta }}</span></span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="m9 18 6-6-6-6"></path></svg>
+</button>
+</sc-for>
+</sc-if>
+</div>
+<div style="flex:none;padding:12px 20px 24px;border-top:2px solid var(--color-divider)">
+<button class="btn btn-primary btn-block" onClick="{{ newSession }}" style="margin:0;height:48px;font-size:15px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>New session · {{ dayShort }}</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSession }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;min-height:0">
+<div style="padding:4px 12px;display:flex;justify-content:space-between;align-items:center">
+<button class="btn btn-ghost" onClick="{{ back }}" style="padding-left:4px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="m15 18-6-6 6-6"></path></svg>Week</button>
+<button class="btn btn-icon" onClick="{{ askDelete }}" aria-label="Delete session" style-hover="background:var(--color-accent-100);color:var(--color-accent-700)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M3 6h18"></path><path d="M19 6v15H5V6"></path><path d="M8 6V3h8v3"></path></svg></button>
+</div>
+<div style="padding:4px 20px 14px;border-bottom:2px solid var(--color-divider)">
+<span class="{{ sTagClass }}">{{ sStatus }}</span>
+<h2 style="margin:8px 0 0;font-size:32px">{{ sTitle }}</h2>
+</div>
+<div style="flex:1;overflow:auto;padding:18px 20px 24px;display:flex;flex-direction:column;gap:20px">
+<div class="field"><label>Date</label><input class="input" type="date" value="{{ sDate }}" onChange="{{ onDate }}" style="height:44px"></div>
+<div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 70%,transparent)">Body parts</span><span class="text-muted" style="font-size:12px">{{ partsHint }}</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:6px">
+<sc-for list="{{ parts }}" as="p" hint-placeholder-count="12">
+<button onClick="{{ p.onToggle }}" style="appearance:none;font:inherit;font-size:13px;font-weight:600;padding:8px 12px;min-height:36px;cursor:pointer;background:{{ p.bg }};color:{{ p.fg }};border:1px solid {{ p.bd }}">{{ p.name }}</button>
+</sc-for>
+</div>
+</div>
+<div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:8px;border-bottom:2px solid var(--color-divider)"><h4 style="margin:0">Exercises</h4><span class="text-muted" style="font-size:12px">{{ exCount }}</span></div>
+<sc-for list="{{ exRows }}" as="e" hint-placeholder-count="2">
+<button onClick="{{ e.onOpen }}" style="width:100%;appearance:none;background:transparent;border:0;border-bottom:1px solid var(--color-divider);padding:14px 0;display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:start;text-align:left;font:inherit;color:inherit;cursor:pointer" style-hover="background:color-mix(in srgb,var(--color-text) 4%,transparent)">
+<span style="font-size:15px;font-weight:800;color:var(--color-accent)">{{ e.idx }}</span>
+<span style="min-width:0;display:flex;flex-direction:column;gap:3px">
+<span style="font-size:16px;font-weight:800;line-height:1.2">{{ e.name }}</span>
+<span style="font-size:14px">{{ e.summary }}</span>
+<span class="text-muted" style="font-size:11px;letter-spacing:.06em;text-transform:uppercase">{{ e.tags }}</span>
+</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" style="margin-top:3px"><path d="m9 18 6-6-6-6"></path></svg>
+</button>
+</sc-for>
+<sc-if value="{{ noEx }}" hint-placeholder-val="{{ false }}"><div class="text-muted" style="font-size:13px;padding:14px 0;border-bottom:1px solid var(--color-divider)">No exercises yet.</div></sc-if>
+<button class="btn btn-secondary btn-block" onClick="{{ newEx }}" style="margin-top:12px;height:44px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Add exercise</button>
+</div>
+</div>
+<div style="flex:none;padding:12px 20px 24px;border-top:2px solid var(--color-divider)">
+<button class="{{ doneClass }}" onClick="{{ toggleDone }}" style="margin:0;height:48px;font-size:15px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M20 6 9 17l-5-5"></path></svg>{{ doneLabel }}</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;justify-content:flex-end;background:color-mix(in srgb,var(--color-neutral-900) 50%,transparent)">
+<div style="height:94%;background:var(--color-bg);border-top:2px solid var(--color-text);display:flex;flex-direction:column;min-height:0">
+<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:10px 12px;border-bottom:2px solid var(--color-divider)">
+<button class="btn btn-ghost" onClick="{{ cancelEx }}" style="justify-self:start">Cancel</button>
+<span style="font-weight:800;font-size:15px">{{ sheetTitle }}</span>
+<button class="btn btn-primary" onClick="{{ saveEx }}" disabled="{{ saveDisabled }}" style="justify-self:end">Save</button>
+</div>
+<div style="flex:1;overflow:auto;padding:18px 20px 28px;display:flex;flex-direction:column;gap:20px">
+<div class="field"><label>Exercise</label><input class="input" value="{{ dName }}" onChange="{{ onName }}" placeholder="e.g. Bench press" style="height:44px;font-size:16px;font-weight:600"></div>
+<div>
+<div style="font-size:12px;color:color-mix(in srgb,var(--color-text) 70%,transparent);margin-bottom:8px">Quick pick</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px">
+<sc-for list="{{ presets }}" as="p" hint-placeholder-count="9">
+<button onClick="{{ p.onPick }}" style="appearance:none;font:inherit;font-size:12px;padding:6px 10px;cursor:pointer;background:{{ p.bg }};color:{{ p.fg }};border:1px solid var(--color-divider)">{{ p.name }}</button>
+</sc-for>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;padding-top:16px;border-top:2px solid var(--color-divider)">
+<div class="field"><label>Equipment</label>
+<div class="seg" style="display:flex;width:100%">
+<label class="seg-opt" style="flex:1;min-height:40px"><input type="radio" name="equip" checked="{{ isBW }}" onChange="{{ setBW }}">Bodyweight</label>
+<label class="seg-opt" style="flex:1;min-height:40px"><input type="radio" name="equip" checked="{{ isFree }}" onChange="{{ setFree }}">Free weights</label>
+</div></div>
+<div class="field"><label>Measured by</label>
+<div class="seg" style="display:flex;width:100%">
+<label class="seg-opt" style="flex:1;min-height:40px"><input type="radio" name="measure" checked="{{ isReps }}" onChange="{{ setReps }}">Reps</label>
+<label class="seg-opt" style="flex:1;min-height:40px"><input type="radio" name="measure" checked="{{ isTime }}" onChange="{{ setTime }}">Time</label>
+</div></div>
+<div class="field"><label>Movement</label>
+<div class="seg" style="display:flex;width:100%">
+<label class="seg-opt" style="flex:1;min-height:40px"><input type="radio" name="motion" checked="{{ isDyn }}" onChange="{{ setDyn }}">Dynamic</label>
+<label class="seg-opt" style="flex:1;min-height:40px"><input type="radio" name="motion" checked="{{ isIso }}" onChange="{{ setIso }}">Isometric</label>
+</div></div>
+</div>
+<div>
+<div style="display:grid;grid-template-columns:28px minmax(0,1fr) minmax(0,1.2fr) 36px;gap:8px;align-items:end;padding-bottom:6px;border-bottom:2px solid var(--color-divider);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 60%,transparent)">
+<span>Set</span><span>{{ valueHeader }}</span><span>{{ weightHeader }}</span><span></span>
+</div>
+<sc-for list="{{ dSets }}" as="s" hint-placeholder-count="3">
+<div style="display:grid;grid-template-columns:28px minmax(0,1fr) minmax(0,1.2fr) 36px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--color-divider)">
+<span style="font-weight:800;font-size:15px">{{ s.n }}</span>
+<input class="input" type="number" min="0" value="{{ s.v }}" onChange="{{ s.onV }}" placeholder="{{ s.vPh }}" style="height:44px;font-size:16px;font-weight:600">
+<div style="display:flex;align-items:center;height:44px;border:1px solid var(--color-divider);background:var(--color-surface)">
+<sc-if value="{{ s.isBW }}" hint-placeholder-val="{{ false }}"><span style="padding:0 0 0 10px;font-size:13px;font-weight:800;white-space:nowrap">BW +</span></sc-if>
+<input type="number" min="0" step="0.5" value="{{ s.w }}" onChange="{{ s.onW }}" placeholder="0" style="flex:1;min-width:0;height:100%;border:0;background:transparent;padding:0 8px;font:inherit;font-size:16px;font-weight:600;color:var(--color-text)">
+<span class="text-muted" style="padding-right:10px;font-size:13px">{{ unit }}</span>
+</div>
+<button class="btn btn-icon" onClick="{{ s.onRm }}" disabled="{{ s.rmDisabled }}" aria-label="Remove set" style-hover="background:color-mix(in srgb,var(--color-text) 7%,transparent)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
+</div>
+</sc-for>
+<div class="text-muted" style="font-size:12px;margin-top:8px">{{ setsHint }}</div>
+<button class="btn btn-secondary btn-block" onClick="{{ addSet }}" style="margin-top:12px;height:44px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Add set</button>
+</div>
+<sc-if value="{{ canDeleteEx }}" hint-placeholder-val="{{ false }}">
+<button class="btn btn-ghost" onClick="{{ deleteEx }}" style="align-self:flex-start;color:var(--color-accent-700)">Remove exercise from session</button>
+</sc-if>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ confirmDel }}" hint-placeholder-val="{{ false }}">
+<div class="dialog-backdrop" style="position:absolute;z-index:20">
+<div class="dialog">
+<div class="dialog-title">Delete this session?</div>
+<div class="dialog-body">{{ delBody }}</div>
+<div class="dialog-actions">
+<button class="btn btn-secondary" onClick="{{ cancelDelete }}">Keep</button>
+<button class="btn btn-primary" onClick="{{ doDelete }}">Delete</button>
+</div>
+</div>
+</div>
+</sc-if>
+</div>
+
+<div style="width:300px;max-width:100%;padding-top:8px">
+<h6 style="margin:0 0 8px;color:var(--color-accent-700)">Prototype notes</h6>
+<h3 style="margin:0 0 16px">Workout log</h3>
+<div style="border-top:2px solid var(--color-divider);font-size:13px;line-height:1.5">
+<p style="margin:0;padding:10px 0;border-bottom:1px solid var(--color-divider)">Week strip schedules. Future sessions are <b>Planned</b>; mark them complete once done. Past, unfinished ones show as <b>Missed</b>.</p>
+<p style="margin:0;padding:10px 0;border-bottom:1px solid var(--color-divider)">Each exercise holds <b>sets</b> — one row per set of reps or seconds, with its own weight.</p>
+<p style="margin:0;padding:10px 0;border-bottom:1px solid var(--color-divider)">Bodyweight exercises log <b>BW + added load</b> (vest, belt). Leave blank for pure bodyweight.</p>
+<p style="margin:0;padding:10px 0;border-bottom:1px solid var(--color-divider)">Choosing <b>Isometric</b> switches the measure to Time; you can switch it back.</p>
+<p style="margin:0;padding:10px 0;border-bottom:1px solid var(--color-divider)">Body parts are optional and multi-select. Empty sessions are discarded on back.</p>
+<p style="margin:0;padding:10px 0;border-bottom:1px solid var(--color-divider)">Data saves in this browser. Units and week start are in Tweaks.</p>
+</div>
+<button class="btn btn-secondary" onClick="{{ resetData }}" style="margin-top:16px">Reset sample data</button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;units&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kg&quot;,&quot;lb&quot;],&quot;default&quot;:&quot;kg&quot;,&quot;tsType&quot;:&quot;'kg'|'lb'&quot;},&quot;weekStart&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Monday&quot;,&quot;Sunday&quot;],&quot;default&quot;:&quot;Monday&quot;,&quot;tsType&quot;:&quot;'Monday'|'Sunday'&quot;}}">
+const KEY = 'wk-sessions-v1';
+const PARTS = ['Chest','Back','Shoulders','Biceps','Triceps','Forearms','Core','Glutes','Quads','Hamstrings','Calves','Full body'];
+const PRESETS = [
+  {name:'Push-up',equip:'bw',measure:'reps',motion:'dyn'},
+  {name:'Pull-up',equip:'bw',measure:'reps',motion:'dyn'},
+  {name:'Plank',equip:'bw',measure:'time',motion:'iso'},
+  {name:'Wall sit',equip:'bw',measure:'time',motion:'iso'},
+  {name:'Dip',equip:'bw',measure:'reps',motion:'dyn'},
+  {name:'Bench press',equip:'free',measure:'reps',motion:'dyn'},
+  {name:'Back squat',equip:'free',measure:'reps',motion:'dyn'},
+  {name:'Deadlift',equip:'free',measure:'reps',motion:'dyn'},
+  {name:'Dumbbell curl',equip:'free',measure:'reps',motion:'dyn'},
+  {name:'Farmer hold',equip:'free',measure:'time',motion:'iso'}
+];
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const uid = () => Math.random().toString(36).slice(2,9);
+const isoWeek = d => { const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const n = t.getUTCDay()||7; t.setUTCDate(t.getUTCDate()+4-n); const y = new Date(Date.UTC(t.getUTCFullYear(),0,1)); return Math.ceil(((t-y)/864e5+1)/7); };
+const fmtT = s => s >= 60 ? `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}` : `${s}s`;
+const mkEx = (name,equip,measure,motion,sets) => ({id:uid(),name,equip,measure,motion,sets:sets.map(([v,w])=>({v:String(v),w:w?String(w):''}))});
+const seed = () => {
+  const t = new Date(), D = n => iso(addDays(t,n));
+  return [
+    {id:uid(),date:D(-3),parts:['Chest','Triceps','Shoulders'],done:true,exercises:[
+      mkEx('Bench press','free','reps','dyn',[[10,40],[8,45],[6,50]]),
+      mkEx('Push-up','bw','reps','dyn',[[15,0],[12,0]]),
+      mkEx('Dumbbell shoulder press','free','reps','dyn',[[10,14],[10,14],[8,16]])]},
+    {id:uid(),date:D(-1),parts:['Core'],done:true,exercises:[
+      mkEx('Plank','bw','time','iso',[[60,0],[45,0]]),
+      mkEx('Hollow hold','bw','time','iso',[[30,0],[30,0],[30,0]]),
+      mkEx('Hanging leg raise','bw','reps','dyn',[[12,0],[10,0]])]},
+    {id:uid(),date:D(0),parts:['Quads','Glutes','Hamstrings'],done:false,exercises:[
+      mkEx('Back squat','free','reps','dyn',[[8,60],[8,60],[8,60]]),
+      mkEx('Wall sit','bw','time','iso',[[60,10]])]},
+    {id:uid(),date:D(2),parts:['Back','Biceps'],done:false,exercises:[
+      mkEx('Pull-up','bw','reps','dyn',[[8,0],[6,0],[6,0]]),
+      mkEx('Dumbbell curl','free','reps','dyn',[[12,10],[10,12]])]},
+    {id:uid(),date:D(5),parts:['Full body'],done:false,exercises:[]}
+  ];
+};
+
+class Component extends DCLogic {
+  state = this.load();
+  load() {
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+    return { sessions: Array.isArray(s) ? s : seed(), view:'home', curId:null, selDate: iso(new Date()), draft:null, draftIdx:-1, confirmDel:false };
+  }
+  componentDidUpdate(pp, ps) { if (ps.sessions !== this.state.sessions) localStorage.setItem(KEY, JSON.stringify(this.state.sessions)); }
+  cur() { return this.state.sessions.find(s => s.id === this.state.curId); }
+  upd(fn) { this.setState(st => ({ sessions: st.sessions.map(s => s.id === st.curId ? fn(s) : s) })); }
+  setD(p) { this.setState(st => ({ draft: { ...st.draft, ...p } })); }
+  setSet(i, p) { this.setState(st => ({ draft: { ...st.draft, sets: st.draft.sets.map((s,j) => j === i ? { ...s, ...p } : s) } })); }
+  tagsText(e) { return [e.equip==='bw'?'Bodyweight':'Free weights', e.measure==='time'?'Timed':'Reps', e.motion==='iso'?'Isometric':'Dynamic'].join(' · '); }
+  summ(e, u) {
+    const s = e.sets.filter(x => x.v !== '');
+    if (!s.length) return 'No sets logged';
+    const vals = s.map(x => e.measure === 'time' ? fmtT(+x.v) : x.v);
+    const left = vals.every(v => v === vals[0]) ? `${s.length} × ${vals[0]}` : vals.join(' / ');
+    const ws = s.map(x => +x.w || 0), mn = Math.min(...ws), mx = Math.max(...ws);
+    const rng = mn === mx ? `${mx}` : `${mn}–${mx}`;
+    const right = e.equip === 'bw' ? (mx ? `BW + ${rng} ${u}` : 'Bodyweight') : (mx ? `${rng} ${u}` : 'No load');
+    return `${left}  ·  ${right}`;
+  }
+  card(s, todayK) {
+    const d = parse(s.date), n = s.exercises.length, sets = s.exercises.reduce((a,e) => a + e.sets.length, 0);
+    const status = s.done ? 'Done' : (s.date < todayK ? 'Missed' : 'Planned');
+    return {
+      kicker: d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric'}),
+      title: s.parts.length ? s.parts.join(' · ') : 'Untitled session',
+      meta: `${n} exercise${n===1?'':'s'} · ${sets} set${sets===1?'':'s'}`,
+      exList: s.exercises.map(e => e.name).join(', ') || 'No exercises yet',
+      status, tagClass: s.done ? 'tag tag-accent' : status === 'Missed' ? 'tag tag-neutral' : 'tag tag-outline',
+      onOpen: () => this.setState({ view:'session', curId:s.id })
+    };
+  }
+  renderVals() {
+    const st = this.state, u = this.props.units ?? 'kg', ws = (this.props.weekStart ?? 'Monday') === 'Sunday' ? 0 : 1;
+    const todayK = iso(new Date()), sel = parse(st.selDate);
+    const start = addDays(sel, -((sel.getDay() - ws + 7) % 7));
+    const week = [0,1,2,3,4,5,6].map(i => {
+      const d = addDays(start, i), k = iso(d), ss = st.sessions.filter(s => s.date === k);
+      const isSel = k === st.selDate, isToday = k === todayK, anyDone = ss.some(s => s.done);
+      return {
+        letter: ['Su','Mo','Tu','We','Th','Fr','Sa'][d.getDay()], num: d.getDate(),
+        bg: isSel ? 'var(--color-text)' : 'transparent',
+        fg: isSel ? 'var(--color-bg)' : isToday ? 'var(--color-accent)' : 'var(--color-text)',
+        dotBg: ss.length && anyDone ? 'var(--color-accent)' : 'transparent',
+        dotBd: ss.length ? 'var(--color-accent)' : 'transparent',
+        onClick: () => this.setState({ selDate: k })
+      };
+    });
+    const diff = Math.round((sel - parse(todayK)) / 864e5);
+    const daySessions = st.sessions.filter(s => s.date === st.selDate).map(s => this.card(s, todayK));
+    const upcoming = st.sessions.filter(s => s.date >= todayK && !s.done && s.date !== st.selDate).sort((a,b) => a.date.localeCompare(b.date)).slice(0,4).map(s => this.card(s, todayK));
+
+    const c = this.cur();
+    let sv = {};
+    if (c) {
+      const cd = parse(c.date), status = c.done ? 'Done' : (c.date < todayK ? 'Missed' : 'Planned');
+      sv = {
+        sTitle: cd.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'}),
+        sStatus: status, sTagClass: c.done ? 'tag tag-accent' : status === 'Missed' ? 'tag tag-neutral' : 'tag tag-outline',
+        sDate: c.date,
+        onDate: e => { const v = e.target.value; if (v) this.upd(s => ({ ...s, date: v })); },
+        partsHint: c.parts.length ? `${c.parts.length} selected` : 'Optional · pick any',
+        parts: PARTS.map(p => {
+          const on = c.parts.includes(p);
+          return { name:p, bg: on ? 'var(--color-accent)' : 'transparent', fg: on ? 'var(--color-bg)' : 'var(--color-text)', bd: on ? 'var(--color-accent)' : 'var(--color-divider)',
+            onToggle: () => this.upd(s => ({ ...s, parts: on ? s.parts.filter(x => x !== p) : PARTS.filter(x => x === p || s.parts.includes(x)) })) };
+        }),
+        exCount: `${c.exercises.length} logged`,
+        exRows: c.exercises.map((e,i) => ({ idx:String(i+1).padStart(2,'0'), name:e.name, tags:this.tagsText(e), summary:this.summ(e,u),
+          onOpen: () => this.setState({ draft: JSON.parse(JSON.stringify(e)), draftIdx: i }) })),
+        noEx: !c.exercises.length,
+        doneClass: c.done ? 'btn btn-secondary btn-block' : 'btn btn-primary btn-block',
+        doneLabel: c.done ? 'Completed · tap to reopen' : (c.date > todayK ? 'Mark complete early' : 'Mark session complete'),
+        delBody: `${sv.sTitle || cd.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'})} and its ${c.exercises.length} exercise${c.exercises.length===1?'':'s'} will be removed.`
+      };
+    }
+
+    const d = st.draft || { name:'', equip:'bw', measure:'reps', motion:'dyn', sets:[] };
+    const dv = {
+      sheetOpen: !!st.draft,
+      sheetTitle: st.draftIdx < 0 ? 'New exercise' : 'Edit exercise',
+      saveDisabled: !d.name.trim(),
+      dName: d.name, onName: e => this.setD({ name: e.target.value }),
+      presets: PRESETS.map(p => { const on = d.name === p.name; return { name:p.name, bg: on ? 'var(--color-text)' : 'transparent', fg: on ? 'var(--color-bg)' : 'var(--color-text)',
+        onPick: () => this.setD({ name:p.name, equip:p.equip, measure:p.measure, motion:p.motion }) }; }),
+      isBW: d.equip === 'bw', isFree: d.equip === 'free', setBW: () => this.setD({ equip:'bw' }), setFree: () => this.setD({ equip:'free' }),
+      isReps: d.measure === 'reps', isTime: d.measure === 'time', setReps: () => this.setD({ measure:'reps' }), setTime: () => this.setD({ measure:'time' }),
+      isDyn: d.motion === 'dyn', isIso: d.motion === 'iso', setDyn: () => this.setD({ motion:'dyn' }), setIso: () => this.setD({ motion:'iso', measure:'time' }),
+      valueHeader: d.measure === 'time' ? 'Time (sec)' : 'Reps',
+      weightHeader: d.equip === 'bw' ? 'Load' : 'Weight',
+      setsHint: d.equip === 'bw' ? 'BW = your bodyweight. Add a vest or belt load, or leave blank.' : 'Total weight moved per set — bar plus plates, or per dumbbell.',
+      dSets: d.sets.map((s,i) => ({ n:i+1, v:s.v, w:s.w, isBW: d.equip === 'bw', vPh: d.measure === 'time' ? '45' : '10',
+        onV: e => this.setSet(i, { v: e.target.value }), onW: e => this.setSet(i, { w: e.target.value }),
+        onRm: () => this.setState(st2 => ({ draft: { ...st2.draft, sets: st2.draft.sets.filter((_,j) => j !== i) } })),
+        rmDisabled: d.sets.length < 2 })),
+      addSet: () => this.setState(st2 => { const l = st2.draft.sets[st2.draft.sets.length-1] || { v:'', w:'' }; return { draft: { ...st2.draft, sets: [...st2.draft.sets, { ...l }] } }; }),
+      canDeleteEx: st.draftIdx >= 0,
+      cancelEx: () => this.setState({ draft:null }),
+      saveEx: () => {
+        const clean = { ...st.draft, name: st.draft.name.trim() }, idx = st.draftIdx;
+        this.upd(s => ({ ...s, exercises: idx < 0 ? [...s.exercises, clean] : s.exercises.map((e,j) => j === idx ? clean : e) }));
+        this.setState({ draft:null });
+      },
+      deleteEx: () => { const idx = st.draftIdx; this.upd(s => ({ ...s, exercises: s.exercises.filter((_,j) => j !== idx) })); this.setState({ draft:null }); }
+    };
+
+    return {
+      isHome: st.view === 'home', isSession: st.view === 'session' && !!c, unit: u,
+      weekNo: isoWeek(sel), year: sel.getFullYear(), monthLabel: sel.toLocaleDateString('en-GB',{month:'long'}),
+      week, daySessions, dayEmpty: !daySessions.length, upcoming, hasUpcoming: upcoming.length > 0,
+      dayTitle: sel.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}),
+      dayShort: sel.toLocaleDateString('en-GB',{weekday:'short',day:'numeric'}),
+      dayRel: diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : diff === -1 ? 'Yesterday' : '',
+      prevWeek: () => this.setState(s => ({ selDate: iso(addDays(parse(s.selDate), -7)) })),
+      nextWeek: () => this.setState(s => ({ selDate: iso(addDays(parse(s.selDate), 7)) })),
+      newSession: () => { const s = { id:uid(), date:st.selDate, parts:[], done:false, exercises:[] }; this.setState(x => ({ sessions:[...x.sessions, s], view:'session', curId:s.id })); },
+      back: () => { const cc = this.cur(); this.setState(x => ({ view:'home', selDate: cc ? cc.date : x.selDate,
+        sessions: cc && !cc.exercises.length && !cc.parts.length ? x.sessions.filter(s => s.id !== cc.id) : x.sessions })); },
+      toggleDone: () => this.upd(s => ({ ...s, done: !s.done })),
+      confirmDel: st.confirmDel,
+      askDelete: () => this.setState({ confirmDel:true }),
+      cancelDelete: () => this.setState({ confirmDel:false }),
+      doDelete: () => this.setState(x => ({ sessions: x.sessions.filter(s => s.id !== x.curId), view:'home', confirmDel:false })),
+      resetData: () => this.setState({ sessions: seed(), view:'home', draft:null, selDate: todayK }),
+      ...sv, ...dv
+    };
+  }
+}
+</script>
+</body>
+</html>
