@@ -7,6 +7,8 @@ import '../utils/dates.dart';
 
 /// Everything the app stores, in one file the user can keep elsewhere:
 /// `{"app": "workoutlog", "version": 1, "exportedAt": ..., "sessions": [...], "exercises": [...], "settings": {...}}`.
+/// The `app` field stays "workoutlog" (the app's original name) so older
+/// backups keep importing.
 class Backup {
   const Backup({required this.sessions, required this.exercises, required this.settings});
 
@@ -32,10 +34,10 @@ class Backup {
     try {
       json = jsonDecode(text);
     } on FormatException {
-      throw const FormatException("This file isn't a Workout Log backup.");
+      throw const FormatException("This file isn't a Fitdger backup.");
     }
     if (json is! Map<String, dynamic> || json['app'] != app) {
-      throw const FormatException("This file isn't a Workout Log backup.");
+      throw const FormatException("This file isn't a Fitdger backup.");
     }
     final v = json['version'];
     if (v is! int || v > version) {
@@ -53,5 +55,5 @@ class Backup {
   }
 }
 
-/// e.g. `workout-log-2026-11-11.json`
-String backupFileName(DateTime now) => 'workout-log-${dateKey(now)}.json';
+/// e.g. `fitdger-2026-11-11.json`
+String backupFileName(DateTime now) => 'fitdger-${dateKey(now)}.json';

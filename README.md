@@ -1,6 +1,8 @@
-# Workout Log
+# Fitdger
 
-A Flutter app for scheduling and tracking strength workouts. You plan or log sessions on dates; each session has optional body parts and a list of exercises, and each exercise has a type (bodyweight/free weights, reps/time, dynamic/isometric) and sets. Data stays on the device.
+Fitdger (fit + ledger) is a Flutter app for scheduling and tracking strength workouts. You plan or log sessions on dates; each session has optional body parts and a list of exercises, and each exercise has a type (bodyweight/free weights, reps/time, dynamic/isometric) and sets. Data stays on the device.
+
+The icon (a barbell that ends in a pencil, writing in a notebook) lives in `assets/icon/`; `dart run flutter_launcher_icons` regenerates the Android and iOS icons from it.
 
 Features: a week view with a summary of done/planned sessions and sets; sessions with colour-coded body parts and exercises; a reusable exercise list (new names are remembered); copying a session to another day, with "Last time" comparisons against the original; light and dark appearance; export/import of all data.
 
@@ -29,7 +31,7 @@ Debug builds seed sample sessions on first launch; release builds start empty.
 
 ## Data and backups
 
-Data lives in the app's private storage (`sessions.json`, `exercises.json`, `settings.json`) and survives restarts and app updates, but not uninstalling or clearing the app's storage. Settings > Your data > Export writes everything to one file (`workout-log-YYYY-MM-DD.json`, see `lib/data/backup.dart`) and opens the share sheet; Import loads such a file and replaces the data on the phone, first keeping a copy of the current data as `before-import.json` in the app's storage.
+Data lives in the app's private storage (`sessions.json`, `exercises.json`, `settings.json`) and survives restarts and app updates, but not uninstalling or clearing the app's storage. Settings > Your data > Export writes everything to one file (`fitdger-YYYY-MM-DD.json`, see `lib/data/backup.dart`) and opens the share sheet; Import loads such a file and replaces the data on the phone, first keeping a copy of the current data as `before-import.json` in the app's storage.
 
 ## Storage and a future move to sqlite
 

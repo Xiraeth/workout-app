@@ -49,6 +49,6 @@ void main() {
   });
 
   test('file name', () {
-    expect(backupFileName(today), 'workout-log-2026-11-11.json');
+    expect(backupFileName(today), 'fitdger-2026-11-11.json');
   });
 }

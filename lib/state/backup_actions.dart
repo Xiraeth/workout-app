@@ -24,7 +24,7 @@ Future<void> exportBackup(WidgetRef ref) async {
   await file.writeAsString(currentBackup(ref).toJsonString(now), flush: true);
   await SharePlus.instance.share(ShareParams(
     files: [XFile(file.path, mimeType: 'application/json')],
-    subject: 'Workout Log backup',
+    subject: 'Fitdger backup',
   ));
 }
 
@@ -38,7 +38,7 @@ Future<Backup?> pickBackup() async {
   try {
     text = utf8.decode(bytes);
   } on FormatException {
-    throw const FormatException("This file isn't a Workout Log backup.");
+    throw const FormatException("This file isn't a Fitdger backup.");
   }
   return Backup.parse(text);
 }

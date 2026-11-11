@@ -108,7 +108,7 @@ class _WorkoutLogAppState extends ConsumerState<WorkoutLogApp> with WidgetsBindi
   Widget build(BuildContext context) {
     ref.listen(settingsProvider.select((s) => s.appearance), (_, _) => _applyPalette());
     return MaterialApp(
-      title: 'Workout Log',
+      title: 'Fitdger',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       home: const WeekScreen(),
