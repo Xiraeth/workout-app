@@ -98,6 +98,8 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: overlayStyle,
         child: Scaffold(
+          // No text fields here; don't re-lay out on every frame of the keyboard animation.
+          resizeToAvoidBottomInset: false,
           body: s == null
               ? const SizedBox.shrink()
               : SafeArea(

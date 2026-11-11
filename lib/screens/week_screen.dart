@@ -44,6 +44,8 @@ class WeekScreen extends ConsumerWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: overlayStyle,
       child: Scaffold(
+          // No text fields here; don't re-lay out on every frame of the keyboard animation.
+          resizeToAvoidBottomInset: false,
         body: SafeArea(
           bottom: false,
           child: Stack(

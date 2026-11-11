@@ -28,21 +28,22 @@ class ExerciseRemoved extends ExerciseSheetResult {
 }
 
 /// Opens the create/edit sheet. Null means cancelled.
-Future<ExerciseSheetResult?> showExerciseSheet(BuildContext context, {Exercise? existing, required WeightUnit unit}) =>
-    showModalBottomSheet<ExerciseSheetResult>(
-      context: context,
-      isScrollControlled: true,
-      barrierColor: AppColors.scrim,
-      // The sheet sits above the keyboard (so the focused field can scroll into
-      // view) and takes 94% of the height that's left.
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-        child: FractionallySizedBox(
-          heightFactor: 0.94,
-          child: ExerciseSheet(existing: existing, unit: unit),
-        ),
-      ),
-    );
+Future<ExerciseSheetResult?> showExerciseSheet(BuildContext context, {Exercise? existing, required WeightUnit unit}) {
+  // Created once: while the keyboard animates, the builder below runs every
+  // frame, and passing the same widget lets Flutter skip rebuilding the sheet.
+  final sheet = ExerciseSheet(existing: existing, unit: unit);
+  return showModalBottomSheet<ExerciseSheetResult>(
+    context: context,
+    isScrollControlled: true,
+    barrierColor: AppColors.scrim,
+    // The sheet sits above the keyboard (so the focused field can scroll into
+    // view) and takes 94% of the height that's left.
+    builder: (context) => Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: FractionallySizedBox(heightFactor: 0.94, child: sheet),
+    ),
+  );
+}
 
 class ExerciseSheet extends ConsumerStatefulWidget {
   const ExerciseSheet({super.key, this.existing, required this.unit});
@@ -94,9 +95,6 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // With the keyboard open the sheet already ends above it; otherwise keep
-    // clear of the navigation bar.
-    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     final isBw = _draft.equipment == Equipment.bodyweight;
     final isTime = _draft.measure == Measure.time;
 
@@ -143,7 +141,7 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
         ),
         Expanded(
           child: ListView(
-            padding: EdgeInsets.fromLTRB(Space.side, 8, Space.side, keyboardOpen ? 28 : bottomGap(context, min: 28)),
+            padding: const EdgeInsets.fromLTRB(Space.side, 8, Space.side, 0),
             children: [
               // Name and quick picks
               AppCard(
@@ -283,11 +281,25 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
                   onPressed: () => Navigator.of(context).pop(const ExerciseRemoved()),
                 ),
               ],
+              const _BottomSpace(),
             ],
           ),
         ),
       ],
     );
+  }
+}
+
+/// Space after the last item. With the keyboard open the sheet already ends
+/// above it; otherwise keep clear of the navigation bar. Only this widget
+/// depends on the keyboard height, so only it rebuilds while the keyboard moves.
+class _BottomSpace extends StatelessWidget {
+  const _BottomSpace();
+
+  @override
+  Widget build(BuildContext context) {
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    return SizedBox(height: keyboardOpen ? 28 : bottomGap(context, min: 28));
   }
 }
 
