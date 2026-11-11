@@ -23,6 +23,10 @@ final initialSettingsProvider = Provider<AppSettings>((ref) => const AppSettings
 final exerciseLibraryRepositoryProvider = Provider<ExerciseLibraryRepository>((ref) => MemoryExerciseLibraryRepository());
 final initialExerciseLibraryProvider = Provider<List<ExerciseTemplate>>((ref) => defaultTemplates());
 
+/// The app's private data folder (null in tests); a copy of the data is kept
+/// here before an import replaces it.
+final dataDirProvider = Provider<String?>((ref) => null);
+
 /// All sessions. Every change is saved straight away.
 class SessionsNotifier extends Notifier<List<Session>> {
   @override
@@ -73,6 +77,7 @@ class SettingsNotifier extends Notifier<AppSettings> {
 
   void setUnit(WeightUnit u) => _set(state.copyWith(unit: u));
   void setWeekStart(WeekStart w) => _set(state.copyWith(weekStart: w));
+  void replace(AppSettings s) => _set(s);
 }
 
 final settingsProvider = NotifierProvider<SettingsNotifier, AppSettings>(SettingsNotifier.new);
@@ -91,6 +96,8 @@ class ExerciseLibraryNotifier extends Notifier<List<ExerciseTemplate>> {
   void remember(Exercise e) => _set(upsertTemplate(state, e));
 
   void remove(String id) => _set(state.where((t) => t.id != id).toList());
+
+  void replaceAll(List<ExerciseTemplate> templates) => _set(templates);
 }
 
 final exerciseLibraryProvider =

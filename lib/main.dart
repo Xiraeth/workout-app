@@ -49,6 +49,7 @@ Future<void> main() async {
       initialSettingsProvider.overrideWithValue(settings),
       exerciseLibraryRepositoryProvider.overrideWithValue(libraryRepo),
       initialExerciseLibraryProvider.overrideWithValue(library),
+      dataDirProvider.overrideWithValue(dir.path),
     ],
     child: const WorkoutLogApp(),
   ));

@@ -46,3 +46,32 @@ Future<bool?> showConfirmDialog(BuildContext context, {required String title, re
         ),
       ),
     );
+
+/// A dialog with a message and an OK button.
+Future<void> showMessageDialog(BuildContext context, {required String title, required String body}) => showDialog<void>(
+      context: context,
+      barrierColor: AppColors.scrim,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(Space.s4),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppText.h3),
+                const SizedBox(height: 8),
+                Text(body, style: AppText.body.copyWith(color: AppColors.muted)),
+                const SizedBox(height: 22),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: AppButton(label: 'OK', variant: BtnVariant.primary, onPressed: () => Navigator.of(context).pop()),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );

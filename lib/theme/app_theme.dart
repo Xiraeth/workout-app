@@ -79,6 +79,14 @@ ThemeData buildAppTheme() {
       cancelButtonStyle: TextButton.styleFrom(foregroundColor: AppColors.muted, textStyle: AppText.button),
       confirmButtonStyle: TextButton.styleFrom(foregroundColor: AppColors.accent, textStyle: AppText.button),
     ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: AppColors.ink,
+      contentTextStyle: AppText.body.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+      shape: rounded(16),
+      elevation: 0,
+      insetPadding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
+    ),
     appBarTheme: const AppBarTheme(systemOverlayStyle: overlayStyle),
   );
 }

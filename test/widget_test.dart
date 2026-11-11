@@ -255,4 +255,14 @@ void main() {
     final first = tester.getTopLeft(find.text('SU')).dx;
     expect(first, lessThan(tester.getTopLeft(find.text('MO')).dx));
   });
+
+  testWidgets('settings shows how much data is stored, with export and import', (tester) async {
+    await pumpApp(tester, sessions: [Session(date: today, parts: [BodyPart.core]), Session(date: addDays(today, 1))]);
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Your data'), findsOneWidget);
+    expect(find.text('2 sessions · 10 exercises on this phone'), findsOneWidget);
+    expect(find.text('Export'), findsOneWidget);
+    expect(find.text('Import'), findsOneWidget);
+  });
 }
